@@ -124,6 +124,7 @@ def solve_for_exit_time(x0,v0, acc, depth):
 
 
 if __name__ == '__main__':
+    plt.ioff()
     all_n_of_collisions = []
     x_end = []
     y_end = []
@@ -137,19 +138,19 @@ if __name__ == '__main__':
     for _ in range(1):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = 900.   # electrods potential in V
-        d = 2e-1    # pore depth in mm
-        r = 1.7e-3    # pore radius in mm
-        #m = 511e3   # in eV
-        m = 195303.27e6
+        V = 1100.   # electrods potential in V
+        d = 3e-1    # pore depth in mm
+        r = 3e-3    # pore radius in mm
+        m = 511e3   # in eV
+        #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
         e = 200   # in eV
         v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
         print(1.6e-19 * 2 / 2 * r)
         print(f"l/D = {(d/(2*r)):.2f}")
-        orientation = numpy.array([numpy.sin(0.2), 0., numpy.cos(0.2)])
+        orientation = numpy.array([numpy.sin(0.13962634), 0., numpy.cos(0.13962634)])
 
-        x0 = numpy.array([0, 0, 0])
+        x0 = numpy.array([-r, 0, 0])
         v0 = v*orientation
 
         if e_field_in_z is True:
@@ -294,9 +295,10 @@ if __name__ == '__main__':
             fig = plt.figure(figsize=(10, 12))
             ax = fig.add_subplot(111, projection='3d')
             ax.set_box_aspect([1, 2, 1])
+            colors = ['red', 'green', 'blue', 'yellow', 'purple', 'orange']  # Add more colors as needed
+
             for i, new_electron in enumerate(electrons):
-                cmap = cm.get_cmap('viridis')
-                color = cmap(i / len(electrons))
+                color = colors[i % len(colors)]
                 ax.plot(new_electron.position_x, new_electron.position_y, new_electron.position_z, label='Projectile Motion', color=color)
             ax.scatter(x_hit, z_pos, y_hit, color='red', marker='o', label='End Point')
 
