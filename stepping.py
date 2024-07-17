@@ -131,26 +131,27 @@ if __name__ == '__main__':
     energy_overall = []
     total_yield =[]
     accept_reject_energy = accept_reject(100000)
-    one_run = True # set to true if you want to run one simulation
+    one_run = False # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(1):
+    for _ in range(300):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = 1100.   # electrods potential in V
-        d = 3e-1    # pore depth in mm
-        r = 3e-3    # pore radius in mm
+        V = 1000.   # electrods potential in V
+        d = 2e-1    # pore depth in mm
+        r = 1.5e-3    # pore radius in mm
         m = 511e3   # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 200   # in eV
+        e = 200  # in eV
         v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
         print(1.6e-19 * 2 / 2 * r)
         print(f"l/D = {(d/(2*r)):.2f}")
         orientation = numpy.array([numpy.sin(0.13962634), 0., numpy.cos(0.13962634)])
 
-        x0 = numpy.array([-r, 0, 0])
+        #x0 = numpy.array([-r, 0, 0])
+        x0 = numpy.array([0, 0, 0])
         v0 = v*orientation
 
         if e_field_in_z is True:
@@ -226,7 +227,7 @@ if __name__ == '__main__':
                     if xj[2] > d and not message_printed:
                         print(f"out of pore in {i - 1} collisions")
                         message_printed = True
-                        n_of_collisions.append(i + 1)
+                        #n_of_collisions.append(i + 1)
                         x_end.append(xj[0])
                         y_end.append(xj[1])
 
@@ -284,11 +285,14 @@ if __name__ == '__main__':
 
                 if xi[2] > d:
                     print(f"out of pore in loop {i - 1}")
+                    n_of_collisions.append(i)
+                    
                     break  # Exit the outer loop when the condition is met
                 #if (electron_yield(energy2)) == 0:
                 #    print("no more electrons")
                 #    break
-        print(f"electrons {electrons}")
+
+            message_printed = False # reset the message printed flag for the next electron
         if one_run is True:
             print(n_of_collisions)
             print(total)
@@ -383,37 +387,44 @@ if __name__ == '__main__':
         energy_overall.append(energy)
         total_yield.append(s_yield)
 
+
     flattened_n_of_collisions = [item for sublist in all_n_of_collisions for item in sublist]
+    print(f"n... {flattened_n_of_collisions}")
     plt.figure()
-    #plt.hist(flattened_n_of_collisions, bins=range(0, max(flattened_n_of_collisions) + 1), alpha=0.7, rwidth=0.85,
-    #       edgecolor='black')
-    plt.hist(energy, bins=20, alpha=0.7, rwidth=0.85,)
+    bins_for_collisions = [i + 0.5 for i in range(min(flattened_n_of_collisions) - 1, max(flattened_n_of_collisions) + 1)]
+    plt.hist(flattened_n_of_collisions, bins=bins_for_collisions, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
+    
     plt.title("Histogram of n_of_collisions")
     plt.xlabel("Number of Collisions")
     plt.ylabel("Frequency")
-    plt.grid(axis='y', alpha=0.75)
 
+    # new plot 
+    # Create points on the circle to show phase space
     plt.figure()
 
-    # Create points on the circle
     circle_center = (0, 0)
     theta = np.linspace(0, 2 * np.pi, 100)
     circle_x = circle_center[0] + r * np.cos(theta)
     circle_y = circle_center[1] + r * np.sin(theta)
 
     # Plot the dashed circular line
-    plt.plot(circle_x, circle_y, linestyle='dashed', label='Dashed Circle')
-
-    # Add a legend
+    plt.plot(circle_x, circle_y, linestyle='dashed', label='pore boundary')
     plt.legend()
     plt.scatter(x_end, y_end, marker='o')
     plt.xlim(-r-r/5, r+r/5)
     plt.ylim(-r-r/5, r+r/5)
 
+    plt.title("pore exit points")
+    plt.xlabel("x position (mm)")
+    plt.ylabel("y position (mm)")
+
+    # new plot 
+    # shows the energy distribution
+    plt.figure()
     print(energy_overall)
     flattened_energy_overall = [item for sublist in energy_overall for item in sublist]
     flattened_yield_overall = [item for sublist in total_yield for item in sublist]
-    plt.figure()
+    
     plt.hist(flattened_energy_overall, alpha=0.7, rwidth=0.85,
              edgecolor='black', range=(0, 500), bins=50 , density=True)
 
@@ -422,13 +433,19 @@ if __name__ == '__main__':
     median = np.percentile(flattened_energy_overall, 50)
     percentile_75 = np.percentile(flattened_energy_overall, 75)
 
-    # Print the results
     print(f'25th Percentile: {percentile_25}')
     print(f'Median (50th Percentile): {median}')
     print(f'75th Percentile: {percentile_75}')
 
-    print(np.mean(flattened_yield_overall))
+    plt.title("energy distribution")
+    plt.xlabel("energy (eV)")
+    plt.ylabel("count")
+
+    # new plot 
+    # shows the yeild distribution
     plt.figure()
+
+    print(np.mean(flattened_yield_overall))
     hist, edges, _ = plt.hist(flattened_yield_overall, alpha=0.7, rwidth=0.85,
              edgecolor='black', density=True, bins=10)
 
