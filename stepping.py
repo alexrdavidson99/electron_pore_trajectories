@@ -12,6 +12,8 @@ import pandas as pd
 from scipy.stats import cosine
 from scipy.linalg import norm
 from consin_dis import cosine_dis
+import functions_for_saving as ffs
+
 
 
 class Electron:
@@ -140,14 +142,18 @@ if __name__ == '__main__':
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 1000.   # electrods potential in V
         d = 2e-1    # pore depth in mm
-        r = 1.5e-3    # pore radius in mm
+        l_over_d = 40
+        r = (d/l_over_d)*0.5 
+       
+      
+        #r = 1.666666e-3    # pore radius in mm
         m = 511e3   # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
         e = 200  # in eV
         v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
         print(1.6e-19 * 2 / 2 * r)
-        print(f"l/D = {(d/(2*r)):.2f}")
+        print(f"l/D = {(d/(2*r)):.2f} length to diameter ratio")
         orientation = numpy.array([numpy.sin(0.13962634), 0., numpy.cos(0.13962634)])
 
         #x0 = numpy.array([-r, 0, 0])
@@ -315,7 +321,7 @@ if __name__ == '__main__':
             # Cylinder parameters
             origin = np.array([0, 0, 0])
             p0 = np.array([0, 1e-3, 0])
-            p1 = np.array([0, 2e-1, 0])
+            p1 = np.array([0, d, 0])
             R = r  # Radius of the cylinder
 
             # Vector in the direction of the axis
@@ -346,15 +352,13 @@ if __name__ == '__main__':
 
             # Plot the surface
             ax.plot_surface(X, Y, Z, facecolors=colors, alpha=0.02)
-            #
+            
 
             plt.figure()
             print(len(time))
             print(len(energy))
             df = pd.DataFrame({"x_hit": x_hit, "y_hit": y_hit, "z_pos": z_pos,"Time": time,  "energy": energy,"angle": angle})
-            #
-            #
-            print(time)
+            
 
             plt.scatter(df.x_hit, df.y_hit, c=df.Time, cmap='viridis', marker='o')
             plt.colorbar(label='Time')
@@ -393,8 +397,10 @@ if __name__ == '__main__':
     plt.figure()
     bins_for_collisions = [i + 0.5 for i in range(min(flattened_n_of_collisions) - 1, max(flattened_n_of_collisions) + 1)]
     plt.hist(flattened_n_of_collisions, bins=bins_for_collisions, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
+    flattened_n_of_collisions = np.array(flattened_n_of_collisions)
     
-    plt.title("Histogram of n_of_collisions")
+    ffs.append_data_with_header('Hits_data.txt', f"l/D = {(d/(2*r)):.2f}", flattened_n_of_collisions)
+    plt.title(f"Histogram of n_of_collisions parameters: l/D = {(d/(2*r)):.2f}, E-field = {(V/(d*10**-3)):.2e}, radius = {r}, length = {d}")
     plt.xlabel("Number of Collisions")
     plt.ylabel("Frequency")
 
@@ -421,12 +427,14 @@ if __name__ == '__main__':
     # new plot 
     # shows the energy distribution
     plt.figure()
-    print(energy_overall)
+    
     flattened_energy_overall = [item for sublist in energy_overall for item in sublist]
     flattened_yield_overall = [item for sublist in total_yield for item in sublist]
     
     plt.hist(flattened_energy_overall, alpha=0.7, rwidth=0.85,
              edgecolor='black', range=(0, 500), bins=50 , density=True)
+    flattened_energy_overall= np.array(flattened_energy_overall)
+    ffs.append_data_with_header('energy_data.txt', f"l/D = {(d/(2*r)):.2f}", flattened_energy_overall)
 
     # Calculate percentiles
     percentile_25 = np.percentile(flattened_energy_overall, 25)
@@ -436,6 +444,8 @@ if __name__ == '__main__':
     print(f'25th Percentile: {percentile_25}')
     print(f'Median (50th Percentile): {median}')
     print(f'75th Percentile: {percentile_75}')
+    print(f"l/D = {(d/(2*r)):.2f} length to diameter ratio")
+    print(f"r is {r}")
 
     plt.title("energy distribution")
     plt.xlabel("energy (eV)")
@@ -445,7 +455,7 @@ if __name__ == '__main__':
     # shows the yeild distribution
     plt.figure()
 
-    print(np.mean(flattened_yield_overall))
+    
     hist, edges, _ = plt.hist(flattened_yield_overall, alpha=0.7, rwidth=0.85,
              edgecolor='black', density=True, bins=10)
 
