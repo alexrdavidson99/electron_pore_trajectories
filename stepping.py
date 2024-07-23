@@ -137,7 +137,7 @@ if __name__ == '__main__':
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(300):
+    for _ in range(3):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 1000.   # electrods potential in V
@@ -202,7 +202,7 @@ if __name__ == '__main__':
         print(f" angle need for rotation {angle_radians * (180 / np.pi)}")
         v_en = np.sqrt((e_p / 511e3) * 2 * (c ** 2))
         v1 = np.array([vel_a[0][0] * v_en, vel_a[0][1] * v_en, vel_a[0][2] * v_en])
-
+        print(f" v1 before rotation {v1[0]} 2 {v1[1]} 3 {v1[2]}")
         num_electrons = electrons_yield
 
         electrons = [Electron(x0, v0) for _ in range(num_electrons)]
@@ -399,7 +399,7 @@ if __name__ == '__main__':
     plt.hist(flattened_n_of_collisions, bins=bins_for_collisions, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
     flattened_n_of_collisions = np.array(flattened_n_of_collisions)
     
-    ffs.append_data_with_header('Hits_data.txt', f"l/D = {(d/(2*r)):.2f}", flattened_n_of_collisions)
+    ffs.append_data_with_header('outputs/Hits_data.txt', f"l/D = {(d / (2 * r)):.2f}", flattened_n_of_collisions)
     plt.title(f"Histogram of n_of_collisions parameters: l/D = {(d/(2*r)):.2f}, E-field = {(V/(d*10**-3)):.2e}, radius = {r}, length = {d}")
     plt.xlabel("Number of Collisions")
     plt.ylabel("Frequency")
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     plt.hist(flattened_energy_overall, alpha=0.7, rwidth=0.85,
              edgecolor='black', range=(0, 500), bins=50 , density=True)
     flattened_energy_overall= np.array(flattened_energy_overall)
-    ffs.append_data_with_header('energy_data.txt', f"l/D = {(d/(2*r)):.2f}", flattened_energy_overall)
+    ffs.append_data_with_header('outputs/energy_data.txt', f"l/D = {(d / (2 * r)):.2f}", flattened_energy_overall)
 
     # Calculate percentiles
     percentile_25 = np.percentile(flattened_energy_overall, 25)

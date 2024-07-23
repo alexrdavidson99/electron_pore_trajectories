@@ -35,13 +35,13 @@ def plot_histograms(sections, labels):
 
 
 # hits 
-filename = 'Hits_data'
+filename = 'outputs/Hits_data'
 sections, labels = read_data_sections(filename)
 plot_histograms(sections, labels)
 plt.show()
 
 # energy
-filename = 'energy_data.txt'
+filename = 'outputs/energy_data.txt'
 sections, labels = read_data_sections(filename)
 plot_histograms(sections, labels)
 plt.show()

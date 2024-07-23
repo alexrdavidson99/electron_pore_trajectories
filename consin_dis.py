@@ -53,7 +53,7 @@ def cosine_dis(xi,r):
 
         vel_a.append(vel)
 
-        print(np.sqrt(vel[0]**2 + vel[1]**2 + vel[2]**2))
+        #print(np.sqrt(vel[0]**2 + vel[1]**2 + vel[2]**2))
         theta = math.acos(cos_theta) * 180 / math.pi;
 
 
