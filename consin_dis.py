@@ -18,8 +18,6 @@ def cosine_dis(xi,r):
     nbins = 45
     delta_bin = 90 / (nbins)
 
-
-
     # surface properties
     tang1 = [-xi[1]/r, xi[0]/r, 0]
     tang2 = [0, 0, -1]

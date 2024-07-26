@@ -104,16 +104,17 @@ def step_energy( v0, acc, time, m ):
     return 0.5*m*(numpy.dot(v0 + acc*time, v0 + acc*time))/(c**2)
 
 def electron_yield(energy2):
-    # poisson_mean = 4.25 * (energy1 / 600) * np.exp(1 - (energy1 / 600))
+
+    poisson_mean =4.35 * (energy2 / 370) * np.exp(1 - (energy2 / 370))
     #poisson_mean = 4.25 * ((energy1 / 600) * np.exp(1 - energy1 / 600)) ** 0.56
-    poisson_mean = 4.25 * (energy2 / 600) * np.exp(1 - (energy2 / 600))
+    #poisson_mean = 4.25 * (energy2 / 600) * np.exp(1 - (energy2 / 600))
     print(f"poisson mean {poisson_mean}")
     pos_0 = np.random.poisson(poisson_mean, 100)
     electrons_yield = np.random.choice(pos_0)
     print(f"yield {electrons_yield}")
     if electrons_yield < 1:
         print(f"no more electrons, yield  {electrons_yield}")
-    s_yield.append(electrons_yield)
+    #s_yield.append(electrons_yield)
     return  electrons_yield
 
 
@@ -170,7 +171,7 @@ if __name__ == '__main__':
         y_hit = []
         z_pos = []
         energy = []
-        s_yield = []
+        #s_yield = []
         error = []
         angle = []
         velocity = []
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         # initial step
         t = solve_for_intercept_time(x0, v0, a0, r)
         x1 = step_position(x0, v0, a0, t)
-        print(x1)
+        print(f"Time to hit boundary: {t}")
 
         energy1 = step_energy(v0, a0, t, m)
         energy.append(energy1)
@@ -195,6 +196,7 @@ if __name__ == '__main__':
         # initial secondaries
         e_p = random.choice(accept_reject_energy)
         print(f"energy from accept_reject {e_p}")
+        print(f"position: {x1[0]} {x1[1]} {x1[2]}")
 
         vel_a,theta = cosine_dis(x1, r)
         angle.append(theta)
@@ -389,7 +391,7 @@ if __name__ == '__main__':
 
         all_n_of_collisions.append(n_of_collisions)
         energy_overall.append(energy)
-        total_yield.append(s_yield)
+        #total_yield.append(s_yield)
 
 
     flattened_n_of_collisions = [item for sublist in all_n_of_collisions for item in sublist]
@@ -420,14 +422,16 @@ if __name__ == '__main__':
     plt.xlim(-r-r/5, r+r/5)
     plt.ylim(-r-r/5, r+r/5)
 
+
     plt.title("pore exit points")
     plt.xlabel("x position (mm)")
     plt.ylabel("y position (mm)")
 
     # new plot 
     # shows the energy distribution
+
+
     plt.figure()
-    
     flattened_energy_overall = [item for sublist in energy_overall for item in sublist]
     flattened_yield_overall = [item for sublist in total_yield for item in sublist]
     
@@ -456,18 +460,18 @@ if __name__ == '__main__':
     plt.figure()
 
     
-    hist, edges, _ = plt.hist(flattened_yield_overall, alpha=0.7, rwidth=0.85,
-             edgecolor='black', density=True, bins=10)
+    #hist, edges, _ = plt.hist(flattened_yield_overall, alpha=0.7, rwidth=0.85,
+    #         edgecolor='black', density=True, bins=10)
 
     # Save histogram data to a text file
-    hist_data = np.column_stack((edges[:-1], edges[1:], hist))
-    np.savetxt('histogram_data_first_hit_CST.txt', hist_data, header='bin_start, bin_end, frequency', fmt='%.4f', delimiter=',')
+    #hist_data = np.column_stack((edges[:-1], edges[1:], hist))
+    #np.savetxt('histogram_data_first_hit_CST.txt', hist_data, header='bin_start, bin_end, frequency', fmt='%.4f', delimiter=',')
 
-    plt.title("Histogram of Yield")
-    plt.xlabel("Yield")
-    plt.ylabel("Frequency")
+   # plt.title("Histogram of Yield")
+   # plt.xlabel("Yield")
+   # plt.ylabel("Frequency")
 
-    print(sum(flattened_yield_overall))
+   # print(sum(flattened_yield_overall))
 
     plt.show()
 

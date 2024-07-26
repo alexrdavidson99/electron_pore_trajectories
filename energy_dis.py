@@ -29,21 +29,21 @@ def accept_reject(N):
     return x_list
 
 
-x = accept_reject(100000)
-bin_counts, bin_edges, patches = plt.hist(x, bins=100, density=True, alpha=0.6, label='Accept Reject histogram')
+#x = accept_reject(100000)
+#bin_counts, bin_edges, patches = plt.hist(x, bins=100, density=True, alpha=0.6, label='Accept Reject histogram')
 
-x = np.linspace(0, 150, 1000)
+#x = np.linspace(0, 150, 1000)
 
-y = p(x,1.0828,1.6636)
-plt.plot(x,y, label = f"pdf")
+#y = p(x,1.0828,1.6636)
+#plt.plot(x,y, label = f"pdf")
 
 #pdf_electrons  = pd.read_csv(f"pdf_python.txt", skiprows= 3, names = ["energy","dis"], sep="\t+")
 #plt.plot(pdf_electrons["energy"],pdf_electrons["dis"], label = f"pdf")
-plt.title("showing pdf v energy")
-plt.xlabel('energy(eV)')
-plt.ylabel('pdf')
+#plt.title("showing pdf v energy")
+#plt.xlabel('energy(eV)')
+#plt.ylabel('pdf')
 #plt.grid(True, which="both", ls="-")
-plt.legend()
+#plt.legend()
 #bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
 
 # Generate some dummy error values, of the same dimensions as the bin counts
@@ -60,15 +60,15 @@ plt.legend()
 #y = p(x,1.0828,1.66)
 #plt.plot(x,y)
 
-plt.figure()
-y_g = np.linspace(0, 1, 1000)
-x_g= sc.gammaincinv(2, y_g)
+#plt.figure()
+#y_g = np.linspace(0, 1, 1000)
+#x_g= sc.gammaincinv(2, y_g)
 
 #plt.plot(y_g,x_g)
 
-print(x_g)
-y_pdf = 2.92779*(x/(7.5**2))*np.exp(-x/7.5)
-plt.plot(x,y_pdf)
+#print(x_g)
+#y_pdf = 2.92779*(x/(7.5**2))*np.exp(-x/7.5)
+#plt.plot(x,y_pdf)
 
 
 
