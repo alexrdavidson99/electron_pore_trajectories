@@ -134,11 +134,11 @@ if __name__ == '__main__':
     energy_overall = []
     total_yield =[]
     accept_reject_energy = accept_reject(100000)
-    one_run = False # set to true if you want to run one simulation
+    one_run = True # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(3):
+    for _ in range(1):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 1000.   # electrods potential in V
@@ -182,6 +182,7 @@ if __name__ == '__main__':
         t = solve_for_intercept_time(x0, v0, a0, r)
         x1 = step_position(x0, v0, a0, t)
         print(f"Time to hit boundary: {t}")
+        print(f"Position at boundary: {x1}")
 
         energy1 = step_energy(v0, a0, t, m)
         energy.append(energy1)
