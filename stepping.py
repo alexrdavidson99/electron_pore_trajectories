@@ -68,24 +68,20 @@ def accept_reject(N):
 def solve_for_intercept_time( x0, v0, acc, radius ):
     '''
     Solve for intercept on the cylinder
-    '''
-
-    print(x0[0]*v0[0], x0[1]*v0[1])
-    print(x0[1])
+    '''    
     _coeff = [ 0.25*(acc[0]**2 + acc[1]**2),  # t^4
                ( acc[0]*v0[0] + acc[1]*v0[1]),  # t^3
                ( v0[0]**2 + v0[1]**2 + x0[0]*acc[0] + x0[1]*acc[1] ),  # t^2
                2.0*( x0[0]*v0[0] + x0[1]*v0[1] ),  # t
                ( x0[0]**2 + x0[1]**2 - radius**2 ) ]  # constant
-    print(_coeff)
+    
     _roots = numpy.roots( _coeff )
-    print(_roots)
 
     _roots = _roots[ numpy.where( numpy.imag( _roots ) == 0, True, False ) ]
 
     _roots = _roots[(_roots > 0) & (_roots > 1e-16)]
 
-    print(numpy.real( numpy.min( _roots ) ))
+    
 
     return numpy.real( numpy.min( _roots ) )
 
@@ -131,14 +127,15 @@ if __name__ == '__main__':
     all_n_of_collisions = []
     x_end = []
     y_end = []
+    t_end = []
     energy_overall = []
     total_yield =[]
     accept_reject_energy = accept_reject(100000)
-    one_run = True # set to true if you want to run one simulation
+    one_run = False # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(1):
+    for _ in range(1000):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 1000.   # electrods potential in V
@@ -148,7 +145,8 @@ if __name__ == '__main__':
        
       
         #r = 1.666666e-3    # pore radius in mm
-        m = 511e3   # in eV
+        #m = 938.272e6 
+        m = 511e3    # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
         e = 200  # in eV
@@ -203,11 +201,11 @@ if __name__ == '__main__':
         angle.append(theta)
         angle_radians = np.arccos(x1[0] / r)
         print(f" angle need for rotation {angle_radians * (180 / np.pi)}")
-        v_en = np.sqrt((e_p / 511e3) * 2 * (c ** 2))
+        v_en = np.sqrt((e_p /m) * 2 * (c ** 2))
         v1 = np.array([vel_a[0][0] * v_en, vel_a[0][1] * v_en, vel_a[0][2] * v_en])
         print(f" v1 before rotation {v1[0]} 2 {v1[1]} 3 {v1[2]}")
-        num_electrons = electrons_yield
-
+        #num_electrons = electrons_yield
+        num_electrons = 1
         electrons = [Electron(x0, v0) for _ in range(num_electrons)]
         initial_electrons = electrons.copy()
 
@@ -225,9 +223,12 @@ if __name__ == '__main__':
                 ti = solve_for_intercept_time(x1, v1, a0, r)
                 print(f" time to hit {ti}")
                 xi = step_position(x1, v1, a0, ti)
+                if ti < 1e-16:
+                    print(f"shit this is small")
+                    
 
-                for j in range(100):
-                    xj = step_position(x1, v1, a0, (ti/100)*j)
+                for j in range(1000):
+                    xj = step_position(x1, v1, a0, (ti/1000)*j)
                     current_electron.position_x.append(xj[0])
                     current_electron.position_y.append(xj[2])
                     current_electron.position_z.append(xj[1])
@@ -239,6 +240,9 @@ if __name__ == '__main__':
                         #n_of_collisions.append(i + 1)
                         x_end.append(xj[0])
                         y_end.append(xj[1])
+                        t_end.append((ti/1000)*j+total)
+                        print(f"out of pore in time {t_end} in time range {total}")
+
 
                 print(xi, xi[0] ** 2 + xi[1] ** 2)
                 energy2 = step_energy(v1, a0, ti, m)
@@ -249,7 +253,7 @@ if __name__ == '__main__':
                 for _ in range(electrons_yield):
                     e_p = random.choice(accept_reject_energy)
                     vel_a, theta = cosine_dis(xi, r)
-                    v_en = np.sqrt((e_p / 511e3) * 2 * (c ** 2))
+                    v_en = np.sqrt((e_p / m) * 2 * (c ** 2))
                     new_velocity = np.array([vel_a[0][0] * v_en, vel_a[0][1] * v_en, vel_a[0][2] * v_en])
 
                     print(f"This is the new {electrons_yield} {new_velocity} {xi}")
@@ -279,7 +283,7 @@ if __name__ == '__main__':
                 angle_radians = np.arccos(xi[0] / r)
                 print(f" angle need for rotation {angle_radians*(180/np.pi)}")
 
-                v_en = np.sqrt((e_p/ 511e3) * 2 * (c ** 2))
+                v_en = np.sqrt((e_p/ m) * 2 * (c ** 2))
                 v1 = np.array([vel_a[0][0]*v_en, vel_a[0][1]*v_en, vel_a[0][2]*v_en])
 
                 angle.append(np.arccos((v1[0]/np.sqrt(v1[0]**2+v1[1]**2))*(-xi[0])/r + (v1[1]/np.sqrt(v1[0]**2+v1[1]**2))*(-xi[1])/r))
@@ -429,6 +433,9 @@ if __name__ == '__main__':
     plt.ylabel("y position (mm)")
 
     # new plot 
+    plt.figure()
+    plt.hist(t_end, bins=10, alpha=0.7, rwidth=0.85, density=True, color='purple', edgecolor='black')
+    plt.title("Histogram of exit times")
     # shows the energy distribution
 
 

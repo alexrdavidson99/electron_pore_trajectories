@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.special as sc
 import pandas as pd
+import random
 
 
 def p(x,sigmaFit,muFit):
@@ -29,7 +30,6 @@ def accept_reject(N):
     return x_list
 
 
-#x = accept_reject(100000)
 #bin_counts, bin_edges, patches = plt.hist(x, bins=100, density=True, alpha=0.6, label='Accept Reject histogram')
 
 #x = np.linspace(0, 150, 1000)
