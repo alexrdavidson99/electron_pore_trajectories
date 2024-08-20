@@ -59,5 +59,54 @@ def cosine_dis(xi,r):
     return vel_a, theta
 
 
+def calculate_theta_cylinder(velocity, impact_position, r):
+    
+    """
+    Calculate the angle θ between the velocity vector of the electron
+    and the z-y plane at the moment of impact.
+    
+    Parameters:
+    velocity : ndarray
+        The velocity vector of the electron at the moment of impact.
+    impact_position : ndarray
+        The position of the electron at the moment of impact.
+    
+    Returns:
+    theta : float
+        The angle of impact in radians with respect to the z-y plane.
+    theta_degrees : float
+        The angle of impact in degrees with respect to the z-y plane.
+    """
+    # Define the radial vector in the z-y plane
+    radial_vector = np.array([0, impact_position[1], impact_position[2]])
+    
+    # Normalize the radial vector
+    radial_magnitude = np.linalg.norm(radial_vector)
+    radial_normalized = radial_vector / radial_magnitude
+    
+    # Normalize the velocity vector
+    velocity_magnitude = np.linalg.norm(velocity)
+    velocity_normalized = velocity / velocity_magnitude
+    
+    # Compute the dot product between the velocity and the radial vector
+    dot_product = np.dot(velocity_normalized, radial_normalized)
+    
+    # Clip the dot product to avoid out-of-range errors in arccos
+    dot_product = np.clip(dot_product, -1.0, 1.0)
+    
+    # Calculate the angle with respect to the z-y plane
+    theta = np.arccos(dot_product)
+    
+    # Convert to degrees
+    theta_degrees = np.degrees(theta)
+    
+    return theta, theta_degrees
 
 
+
+#velocity = [0.0025,     0.,         0.01980516]
+#impact_postion = [0.02724217, 0.,         0.23779032]
+
+#degree_rad, degree  = calculate_theta_cylinder(velocity, impact_postion, 0.02724217)
+#print(f"degree_rad = {degree_rad} radians")
+#print(f"degree = {degree} degrees")

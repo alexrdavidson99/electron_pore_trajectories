@@ -5,9 +5,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.constants
 from scipy.linalg import norm
 
-from energy_dis import accept_reject
-from stepping import electron_yield, solve_for_intercept_time, step_position, step_energy
-from consin_dis import cosine_dis
+from energy_dis import accept_reject_v, sey_coefficient
+from stepping import electron_yield, solve_for_intercept_time, step_position, step_energy, step_velocity
+from consin_dis import cosine_dis, calculate_theta_cylinder
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -33,19 +33,15 @@ for i in range(1):
         def parent(self):
             return self.initiating_electron
 
-        def gen_secondaries(self, end_point, impact_energy):
+        def gen_secondaries(self, end_point, impact_energy,angle):
             # Generate secondary electrons
             secondaries = []
-
-            poisson_mean = 5.85 * (impact_energy / 320) * np.exp(1 - (impact_energy / 320))
-
+        
+            poisson_mean = sey_coefficient(impact_energy, angle)
+            poisson_mean = int(np.round(poisson_mean))
             pos_0 = np.random.poisson(poisson_mean, 500)
-            electrons_yield = np.random.choice(pos_0)
+            electrons_yield = poisson_mean
             
-            if e.bounce_id == 0:
-                electrons_yield = 1
-            if e.bounce_id == 1:
-                electrons_yield = 5
             if end_point[2] > end_position_threshold:
                 electrons_yield = 0
             
@@ -61,14 +57,14 @@ for i in range(1):
             return secondaries
 
 
-    def track_electron(electron, r=0.055, m=511e3, V = 1100):
+    def track_electron(electron, r=0.006, m=511e3, V = 700):
         """
         Track an electron and determine its end point and impact energy
         """
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position
-        d = 2 * r * 60
+        d = 2 * r * 38.3
         E = V * (c ** 2) / (d * m)
         field_orientation = np.array([0., 0., 1])
         a0 = E * field_orientation
@@ -83,6 +79,10 @@ for i in range(1):
             hit_position = step_position(x0, v0, a0, t)
             
             impact_energy = step_energy(v, a0, t, m)
+            end_velocity = step_velocity(v0, a0, t)
+            impact_angle, impact_angle_d = calculate_theta_cylinder(end_velocity, hit_position, r)
+            
+            
 
         else:
             
@@ -107,6 +107,9 @@ for i in range(1):
             hit_position = step_position(electron.position, v1, a0, ti)
             
             impact_energy = step_energy(v1, a0, ti, m)
+            end_velocity = step_velocity(v1, a0, ti)
+            impact_angle, impact_angle_d = calculate_theta_cylinder(end_velocity, hit_position, r)
+           
 
 
         # Track electron and determine its end point
@@ -114,30 +117,31 @@ for i in range(1):
         end_point = hit_position
         electron.end_point = end_point
         electron.impact_energy = impact_energy
-        return  end_point,impact_energy
+        electron.angle = impact_angle
+        return  end_point,impact_energy, impact_angle
 
 
-    def generate_secondary(end_point, impact_energy, electron):
+    def generate_secondary(end_point, impact_energy, angle, electron):
         """
         Generate secondary electrons based on the end point and impact energy of the parent electron
         """
-        return electron.gen_secondaries(end_point, impact_energy)
+        return electron.gen_secondaries(end_point, impact_energy, angle)
 
 
     def track_electron_and_generate_secondaries(electron):
         """
         Track an electron and generate secondary electron
         """
-        end_point,impact_energy = track_electron(electron)
+        end_point,impact_energy, angle = track_electron(electron)
         
-        secondaries = generate_secondary(end_point, impact_energy, electron)
+        secondaries = generate_secondary(end_point, impact_energy, angle, electron)
         electron.secondaries = secondaries
         return secondaries
 
 
     def gen_electron():
         # Generate the first electron
-        return Electron(position=[0, 0, 0], impact_energy=200, angle=45, bounce_id=0)
+        return Electron(position=[0, 0, 0], impact_energy=200, angle=np.rad2deg(45), bounce_id=0)
 
     electrons = []
     if first_bounce:
@@ -148,9 +152,11 @@ for i in range(1):
 
     total_electron_count = 0
     end_position_count = 0
-    r= 0.055
-    end_position_threshold = r*2*60
-    initial_energy_distribution = accept_reject(1000)
+    r= 0.006
+    end_position_threshold = r*2*38.3
+    E0 = 150  # eV, assumed value
+    T = 7.5  # eV, assumed temperature
+    initial_energy_distribution = accept_reject_v(1000,E0,T)
 
     start_positions = []
     end_positions = []
@@ -232,6 +238,7 @@ for i in range(1):
         ax.scatter(start_positions[:, 0], start_positions[:, 2], start_positions[:, 1], color='blue', label='Start Positions')
         # Plot end positions
         ax.scatter(end_positions[:, 0], end_positions[:, 2], end_positions[:, 1], color='red', label='End Positions')
+        ax.scatter(end_positions[0, 0], end_positions[0, 2], end_positions[0, 1], color='green', label='fist bounce')
 
         ax.set_xlabel('X')
         ax.set_ylabel('z')
@@ -271,7 +278,7 @@ for i in range(1):
         Y = p0[1] + R * np.sin(theta) * n1[1] + R * np.cos(theta) * n2[1] + v[1] * z
         Z = p0[2] + R * np.sin(theta) * n1[2] + R * np.cos(theta) * n2[2] + v[2] * z
 
-        colors = np.where(((Y >= 0) & (Y <= 1e-2)) | ((Y >= 1.8e-1) & (Y <= 2e-1)), 'red', 'aqua')
+        colors = np.where(((Y >= 0) & (Y <= 1e-2)) | ((Y >= end_position_threshold-0.01) & (Y <= end_position_threshold)), 'red', 'aqua')
 
         # Plot the surface
         ax.plot_surface(X, Y, Z, facecolors=colors, alpha=0.02)
@@ -296,8 +303,11 @@ for i in range(1):
 
         plt.figure(figsize=(12, 6))
         #plt.scatter(end_positions[:, 0], end_positions[:, 2], color='blue', label='Start Positions')
-        plt.hist(end_positions[:,2], bins=100, color='red', label='End Positions')
+        plt.hist(end_positions[:,2], bins=200, color='red', label='End Positions')
         plt.xlim(0,end_position_threshold)
+        plt.xlabel('Z Position mm')
+        plt.ylabel('Number of Electrons')
+        plt.title('Electron hit Position Distribution in the Z direction')
         plt.figure(figsize=(12, 6))
         plt.hist(energies, bins=100, alpha=0.75, range=(0,1000), label='Electron Energy')
         plt.hist(energies_out, bins=100, alpha=0.75,range=(0,1000), label='Electron Energy out of pore')

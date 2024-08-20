@@ -3,7 +3,23 @@ import matplotlib.pyplot as plt
 import scipy.special as sc
 import pandas as pd
 import random
+from scipy.special import gammainc
+from consin_dis import calculate_theta_cylinder
 
+
+def test(impact_energy, angle):
+    poisson_mean = sey_coefficient(impact_energy, angle)
+    pos_0 = np.random.poisson(poisson_mean, 500)
+    return pos_0
+
+# Defining the PDF with the correct incomplete gamma function parameters
+def vaughan_pdf_corrected(E, E0, T):
+    # δ(E0, θ0) 
+    delta = 1
+    # Correct incomplete gamma function with (2, E0/T)
+    inc_gamma = gammainc(2, E0 / T)
+    pdf = delta * (E / T**2) * np.exp(-E / T) / inc_gamma
+    return pdf
 
 def p(x,sigmaFit,muFit):
     # return x/(5**2)*np.exp(-(x**2)/(2*(5**2)))
@@ -13,7 +29,7 @@ def p(x,sigmaFit,muFit):
     return (1 / (x * sigmaFit * (2 * np.pi) ** (1 / 2))) * np.exp(-(((np.log(x) - muFit) ** 2) / (2 * (sigmaFit ** 2))))
 
 
-def accept_reject(N):
+def accept_reject(N,sigmaFit,muFit):
     xmin = 0
     xmax = 150
     #pmax = 0.12130
@@ -24,34 +40,142 @@ def accept_reject(N):
     while n_accept < N:
         t = (xmax - xmin) * np.random.rand() + xmin
         y = np.random.rand()
-        if y < p(t,1.0828,1.6636) / pmax:
+        if y < p(t,sigmaFit,muFit) / pmax:
             n_accept += 1
             x_list.append(t)
     return x_list
 
 
-#bin_counts, bin_edges, patches = plt.hist(x, bins=100, density=True, alpha=0.6, label='Accept Reject histogram')
+def accept_reject_v(N,E0,T):
+    
+    xmin = 0
+    xmax = E0
+    n_accept = 0
+    x_list = []
+    while n_accept < N:
+        t = (xmax - xmin) * np.random.rand() + xmin
+        y = np.random.rand()
+        if y < vaughan_pdf_corrected(t, E0, T) / vaughan_pdf_corrected(T, E0, T):
+            n_accept += 1
+            x_list.append(t)
+    return x_list
 
-#x = np.linspace(0, 150, 1000)
+def sey_coefficient(E, theta, E_th=0, Emax=370, delta_max=3.35, k_delta=1, k_E=1, alpha=0.25):
+    """
+    Computes the SEY coefficient using the Modified Vaughan's model.
+    
+    Parameters:
+    E (float): Impacting electron kinetic energy.
+    theta (float): Incident angle with respect to the surface normal (in radians).
+    E0 (float): Work function related parameter.
+    Emax (float): Maximum energy for SEY.
+    delta_max (float): Maximum SEY value.
+    k_delta (float): Roughness factor related to delta.
+    k_E (float): Roughness factor related to energy.
+    alpha (float): Material-dependent fit parameter.
+    delta_low (float): SEY value at low impacting energies (default is 1).
 
-#y = p(x,1.0828,1.6636)
-#plt.plot(x,y, label = f"pdf")
+    theta = np.radians(0)  # Incident angle in radians
+    E0 = 0  # Work function related parameter
+    Emax = 340.0  # Maximum energy for SEY
+    delta_max = 3.7  # Maximum SEY value
+    k_delta = 1.0  # Roughness factor related to delta
+    k_E = 1.0  # Roughness factor related to energy
+    alpha = 0.25  # Material-dependent fit parameter
+    
+    Returns:
+    float: The SEY coefficient δ(E, θ).
+    """
+    Emax_theta = Emax * (1 + k_E * theta**2 / (2 * np.pi))
+    
+    delta_max_theta = delta_max * (1 + k_delta * theta**2 / (2 * np.pi))
+    
+  
+    v_E = (E - E_th) / (Emax_theta - E_th)
+    
+    if v_E < 1:
+        delta = delta_max_theta * (v_E * np.exp(1 - v_E))**0.56
+    elif 1 <= v_E <= 3.6:
+        delta = delta_max_theta * (v_E * np.exp(1 - v_E))**alpha
+    else:  # v(E) > 3.6
+        delta = delta_max_theta * 1.125 * v_E**-0.65
+    
+    return delta
 
-#pdf_electrons  = pd.read_csv(f"pdf_python.txt", skiprows= 3, names = ["energy","dis"], sep="\t+")
-#plt.plot(pdf_electrons["energy"],pdf_electrons["dis"], label = f"pdf")
-#plt.title("showing pdf v energy")
-#plt.xlabel('energy(eV)')
-#plt.ylabel('pdf')
-#plt.grid(True, which="both", ls="-")
-#plt.legend()
-#bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-# Generate some dummy error values, of the same dimensions as the bin counts
-#y_error = np.random.rand(bin_counts.size)*0.005
 
-# Plot the error bars, centred on (bin_centre, bin_count), with length y_error
-#plt.errorbar(x=bin_centres, y=bin_counts,
-#            yerr=y_error, fmt='o', capsize=2)
+plot = False
+
+if plot == True:
+    total_pos = []
+    for i in range(0, 10):
+        impact_energy = 600
+        angle = 0
+        pos_0 = test(impact_energy, angle)
+        total_pos.append(pos_0)
+    
+    plt.hist(total_pos, bins=10, density=True, alpha=0.6)
+
+    plt.figure()
+    E0 = 150  # eV, assumed value
+    T = 10.5  # eV, assumed temperature
+    # Energy range for plotting
+    E = np.linspace(0, 600, 5000)
+    r = 0.025  # Radius of the cylinder
+    d = 0.2  # Height of the cylinder
+    end_position = [0.0025,     0.,         0.01779044]
+    end_velocity =[0.86147291, 0.,          6.13108814]
+    yield_curve = [sey_coefficient(E_i, theta=0, E_th=0, Emax=370, delta_max=3.5, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
+    
+    theta_rad , theta = calculate_theta_cylinder(end_velocity, end_position, r)
+    print(theta)
+    yield_curve_rad = [sey_coefficient(E_i, theta=np.deg2rad(32), E_th=0, Emax=370, delta_max=3.5, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
+    plt.figure()
+    plt.plot(E, yield_curve, 'b-', lw=2, label = f"theta = {0}")
+    plt.plot(E, yield_curve_rad, 'r-', lw=2, label = f"theta = {32}")
+    plt.title("SEY curve for a flat surface")
+    plt.xlabel("Incident electron energy in eV")
+    plt.ylabel("SEY coefficient")
+    plt.grid(True)
+    plt.legend()
+
+    plt.figure()
+
+    # Calculate the PDF values using the correct parameters
+    pdf_values_corrected = vaughan_pdf_corrected(E, E0, T)
+    plt.plot(E, pdf_values_corrected, 'r-', lw=2)
+    x_list= accept_reject_v(1000,E0,T)
+    # Plot the PDF
+    plt.hist(x_list, bins=50, density=True, alpha=0.6, label='Accept Reject histogram')
+
+
+    # Plot the corrected PDF
+    plt.plot(E, pdf_values_corrected, 'r-', lw=2)
+    plt.title(f"PDF - Vaughan  E0 ={E0} eV, T= {T} eV")
+    plt.xlabel("Secondary electron energy in eV")
+    plt.ylabel("PDF - Vaughan")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+
+    sigmaFit = 0.0828
+    muFit = 3.6621
+    x = np.linspace(0.0001, 150, 1000)
+    y = p(x,sigmaFit,muFit)
+    N = 10000
+    plt.plot(x,y, label = f"pdf")
+    x_list = accept_reject(N,sigmaFit,muFit)
+    bin_counts, bin_edges, patches = plt.hist(x_list, bins=100, density=True, alpha=0.6, label='Accept Reject histogram')
+
+    #pdf_electrons  = pd.read_csv(f"pdf_python.txt", skiprows= 3, names = ["energy","dis"], sep="\t+")
+    #plt.plot(pdf_electrons["energy"],pdf_electrons["dis"], label = f"pdf")
+    plt.title("showing pdf v energy")
+    plt.xlabel('energy(eV)')
+    plt.ylabel('pdf')
+    
+
+   
 
 
 

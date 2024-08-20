@@ -11,8 +11,9 @@ import pandas as pd
 
 from scipy.stats import cosine
 from scipy.linalg import norm
-from consin_dis import cosine_dis
+from consin_dis import cosine_dis, calculate_theta_cylinder
 import functions_for_saving as ffs
+from energy_dis import accept_reject_v
 
 
 
@@ -92,6 +93,12 @@ def step_position( x0, v0, acc, time ):
     '''
     return x0 + v0*time + 0.5*acc*time**2
 
+def step_velocity( v0, acc, time ):
+    '''
+    Velocity after time step
+    '''
+    return v0 + acc*time
+
 def step_energy( v0, acc, time, m ):
     '''
     Energy after time step starting from emission velocity
@@ -130,12 +137,15 @@ if __name__ == '__main__':
     t_end = []
     energy_overall = []
     total_yield =[]
-    accept_reject_energy = accept_reject(100000)
-    one_run = False # set to true if you want to run one simulation
+    
+    E0 = 150  # eV, assumed value
+    T = 10.5  # eV, assumed temperature
+    accept_reject_energy = accept_reject_v(100000, E0, T)
+    one_run = True # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(1000):
+    for _ in range(1):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 1000.   # electrods potential in V
@@ -145,15 +155,15 @@ if __name__ == '__main__':
        
       
         #r = 1.666666e-3    # pore radius in mm
-        #m = 938.272e6 
-        m = 511e3    # in eV
+        m = 938.272e6 
+        #m = 511e3    # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 200  # in eV
+        e = 20  # in eV
         v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
         print(1.6e-19 * 2 / 2 * r)
         print(f"l/D = {(d/(2*r)):.2f} length to diameter ratio")
-        orientation = numpy.array([numpy.sin(0.13962634), 0., numpy.cos(0.13962634)])
+        orientation = numpy.array([numpy.sin(0.13962634), 0, numpy.cos(0.13962634)])
 
         #x0 = numpy.array([-r, 0, 0])
         x0 = numpy.array([0, 0, 0])
@@ -179,12 +189,24 @@ if __name__ == '__main__':
         # initial step
         t = solve_for_intercept_time(x0, v0, a0, r)
         x1 = step_position(x0, v0, a0, t)
+        step_velocity = step_velocity(v0, a0, t)
+        impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity, x1, r)
+
         print(f"Time to hit boundary: {t}")
         print(f"Position at boundary: {x1}")
+        print(f"Velocity at boundary: {step_velocity}")
+        print(f"Impact angle: {impact_angle} radians ({impact_angle_d} degrees)")
+        plt.figure()
+        plt.plot(x1[0], x1[1], 'ro')  # impact position
+        plt.plot(x0[0], x0[1], 'bo')  # starting position
+        plt.xlabel('x-position (mm)')
+        plt.ylabel('y-position (mm)')
+        plt.title('Electron Trajectory')
+        plt.grid(True)
+        plt.show()
 
         energy1 = step_energy(v0, a0, t, m)
         energy.append(energy1)
-
         electrons_yield = electron_yield(energy1)
 
         x_hit.append(x1[0])
@@ -309,7 +331,7 @@ if __name__ == '__main__':
         if one_run is True:
             print(n_of_collisions)
             print(total)
-            fig = plt.figure(figsize=(10, 12))
+            fig = plt.figure(figsize=(16, 8))
             ax = fig.add_subplot(111, projection='3d')
             ax.set_box_aspect([1, 2, 1])
             colors = ['red', 'green', 'blue', 'yellow', 'purple', 'orange']  # Add more colors as needed
