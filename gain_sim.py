@@ -12,13 +12,10 @@ from consin_dis import cosine_dis, calculate_theta_cylinder
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-
-first_bounce = True
-max_electrons = 100000  # Maximum number of electrons to be generated
-energy_threshold = 1  # Energy threshold below which electrons are not tracked
-gain_spread = []
-single_run = True
-for i in range(1):
+def run_simulation(r, single_run=True):
+    # Initialize variables that were previously global
+    first_bounce = True
+    max_electrons = 100000
     @dataclass
     class Electron:
         position: List[float]
@@ -39,7 +36,7 @@ for i in range(1):
         
             poisson_mean = sey_coefficient(impact_energy, angle)
             poisson_mean = int(np.round(poisson_mean))
-            pos_0 = np.random.poisson(poisson_mean, 500)
+            #pos_0 = np.random.poisson(poisson_mean, 500)
             electrons_yield = poisson_mean
             
             if end_point[2] > end_position_threshold:
@@ -57,14 +54,14 @@ for i in range(1):
             return secondaries
 
 
-    def track_electron(electron, r=0.006, m=511e3, V = 700):
+    def track_electron(electron, r, m=511e3, V = 700):
         """
         Track an electron and determine its end point and impact energy
         """
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position
-        d = 2 * r * 38.3
+        d = 2 * 0.006 * 38.3
         E = V * (c ** 2) / (d * m)
         field_orientation = np.array([0., 0., 1])
         a0 = E * field_orientation
@@ -128,11 +125,11 @@ for i in range(1):
         return electron.gen_secondaries(end_point, impact_energy, angle)
 
 
-    def track_electron_and_generate_secondaries(electron):
+    def track_electron_and_generate_secondaries(electron,r):
         """
         Track an electron and generate secondary electron
         """
-        end_point,impact_energy, angle = track_electron(electron)
+        end_point,impact_energy, angle = track_electron(electron,r)
         
         secondaries = generate_secondary(end_point, impact_energy, angle, electron)
         electron.secondaries = secondaries
@@ -152,9 +149,9 @@ for i in range(1):
 
     total_electron_count = 0
     end_position_count = 0
-    r= 0.006
-    end_position_threshold = r*2*38.3
-    E0 = 150  # eV, assumed value
+    r= r
+    end_position_threshold = 0.006*2*38.3
+    E0 = 50  # eV, assumed value
     T = 7.5  # eV, assumed temperature
     initial_energy_distribution = accept_reject_v(1000,E0,T)
 
@@ -171,7 +168,7 @@ for i in range(1):
         e = electrons.pop()
         bounce_id = e.bounce_id
     
-        new_electrons = track_electron_and_generate_secondaries(e)
+        new_electrons = track_electron_and_generate_secondaries(e,r)
         total_electron_count += len(new_electrons)
 
         if e.bounce_id > 100 :
@@ -223,7 +220,7 @@ for i in range(1):
 
     end_positions_np = np.array(end_positions)
     count_above_threshold = np.sum(end_positions_np[:, 2] > end_position_threshold)
-    gain_spread.append(count_above_threshold)
+
     print(f"Number of end positions above the threshold {end_position_threshold}: {count_above_threshold}")
 
     print((bounce_counts))
@@ -311,7 +308,7 @@ for i in range(1):
         plt.figure(figsize=(12, 6))
         plt.hist(energies, bins=100, alpha=0.75, range=(0,1000), label='Electron Energy')
         plt.hist(energies_out, bins=100, alpha=0.75,range=(0,1000), label='Electron Energy out of pore')
-        print(f"energies {np.max(energies)}")
+        #print(f"energies {np.max(energies)}")
         try:
             print(f"energies_out {np.max(energies_out)}")
         except Exception as e:
@@ -321,11 +318,30 @@ for i in range(1):
         plt.ylabel('Number of Electrons')
         plt.title('Electron Energy Distribution')
         plt.legend()
+    return  count_above_threshold
 
+gain_spread = []
 
-    
-plt.figure(figsize=(12, 6))
-plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
+range_of_r = np.linspace(0.002, 0.0145, num=20)
+
+for i in range(len(range_of_r)):
+    r = range_of_r[i]
+    gain_spread_mean = []
+    for j in range(50):
+        count_above_threshold= run_simulation(r,single_run=False)
+        gain_spread_mean.append(count_above_threshold)
+    gain_spread_mean = np.mean(gain_spread_mean)
+    gain_spread.append(gain_spread_mean)
+print(f"gain spread mean {gain_spread_mean}")
+
+print(f"gain spread {gain_spread}")
+single_run = False
+if single_run == False:  
+    plt.figure(figsize=(12, 6))
+    #plt.hist(gain_spread, bins=10, alpha=0.75, label='Electron Energy')#,log=True)
+    plt.scatter(range_of_r, gain_spread, color='blue')
+    plt.ylabel('Number of Electrons leaving the pore')
+    plt.xlabel('Pore Radius[mm]')
 plt.show()
 
 

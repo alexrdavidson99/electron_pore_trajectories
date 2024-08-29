@@ -7,6 +7,8 @@ https://www.particleincell.com/2015/cosine-distribution/
 from random import random
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 
@@ -92,7 +94,7 @@ def calculate_theta_cylinder(velocity, impact_position, r):
     dot_product = np.dot(velocity_normalized, radial_normalized)
     
     # Clip the dot product to avoid out-of-range errors in arccos
-    dot_product = np.clip(dot_product, -1.0, 1.0)
+    #dot_product = np.clip(dot_product, -1.0, 1.0)
     
     # Calculate the angle with respect to the z-y plane
     theta = np.arccos(dot_product)
@@ -103,10 +105,28 @@ def calculate_theta_cylinder(velocity, impact_position, r):
     return theta, theta_degrees
 
 
+plot = False
 
-#velocity = [0.0025,     0.,         0.01980516]
-#impact_postion = [0.02724217, 0.,         0.23779032]
+if plot:
 
-#degree_rad, degree  = calculate_theta_cylinder(velocity, impact_postion, 0.02724217)
-#print(f"degree_rad = {degree_rad} radians")
-#print(f"degree = {degree} degrees")
+    xi = [0.2724217, 0., 0.23779032]
+    r = 0.02724217
+    v_bin = []
+    
+    for i in range(0, 10000):
+        vel_a, theta = cosine_dis(xi, r)
+        
+
+        v_en = 1
+        v1 = np.array([vel_a[0][0]*v_en, vel_a[0][1]*v_en, vel_a[0][2]*v_en])
+        v_bin.append(v1)
+    
+    v_bin = np.array(v_bin)
+    fig = plt.figure()
+    ax2 = fig.add_subplot(212, projection='3d')
+    ax2.scatter(v_bin[:, 0],v_bin[:, 1],v_bin[:, 2],c='r');
+    ax2.set_xlabel('angle')
+    ax2.set_ylabel('normalized count')
+    plt.show()
+
+
