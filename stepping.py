@@ -140,7 +140,7 @@ if __name__ == '__main__':
     
     E0 = 150  # eV, assumed value
     T = 10.5  # eV, assumed temperature
-    accept_reject_energy = accept_reject_v(100000, E0, T)
+    accept_reject_energy = accept_reject_v(100000, E0, T,1)
     one_run = True # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
@@ -148,19 +148,21 @@ if __name__ == '__main__':
     for _ in range(1):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = 1000.   # electrods potential in V
-        d = 2e-1    # pore depth in mm
+        V = 700.   # electrods potential in V
+        #d = 2e-1  
+        d = 2 * 0.006 * 38.3  # pore depth in mm
         l_over_d = 40
         r = (d/l_over_d)*0.5 
-       
+        r = 0.006
       
         #r = 1.666666e-3    # pore radius in mm
-        m = 938.272e6 
-        #m = 511e3    # in eV
+        #m = 938.272e6 
+        m = 511e3    # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 20  # in eV
+        e = 200  # in eV
         v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
+        
         print(1.6e-19 * 2 / 2 * r)
         print(f"l/D = {(d/(2*r)):.2f} length to diameter ratio")
         orientation = numpy.array([numpy.sin(0.13962634), 0, numpy.cos(0.13962634)])
@@ -168,7 +170,7 @@ if __name__ == '__main__':
         #x0 = numpy.array([-r, 0, 0])
         x0 = numpy.array([0, 0, 0])
         v0 = v*orientation
-
+        
         if e_field_in_z is True:
             orientation = numpy.array([0., 0., 1])
         a0 = E*orientation
@@ -190,6 +192,7 @@ if __name__ == '__main__':
         t = solve_for_intercept_time(x0, v0, a0, r)
         x1 = step_position(x0, v0, a0, t)
         step_velocity = step_velocity(v0, a0, t)
+        print(f"v1 = {step_velocity}")
         impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity, x1, r)
 
         print(f"Time to hit boundary: {t}")
@@ -206,6 +209,7 @@ if __name__ == '__main__':
         plt.show()
 
         energy1 = step_energy(v0, a0, t, m)
+        print(f"Energy at boundary at fist hit: {energy1}")
         energy.append(energy1)
         electrons_yield = electron_yield(energy1)
 

@@ -5,6 +5,8 @@ import pandas as pd
 import random
 from scipy.special import gammainc
 from consin_dis import calculate_theta_cylinder
+from scipy.special import gammainc
+from scipy.interpolate import interp1d
 
 
 def test(impact_energy, angle):
@@ -13,9 +15,8 @@ def test(impact_energy, angle):
     return pos_0
 
 # Defining the PDF with the correct incomplete gamma function parameters
-def vaughan_pdf_corrected(E, E0, T):
+def vaughan_pdf_corrected(E, E0, T, delta):
     # δ(E0, θ0) 
-    delta = 1
     # Correct incomplete gamma function with (2, E0/T)
     inc_gamma = gammainc(2, E0 / T)
     pdf = delta * (E / T**2) * np.exp(-E / T) / inc_gamma
@@ -46,7 +47,7 @@ def accept_reject(N,sigmaFit,muFit):
     return x_list
 
 
-def accept_reject_v(N,E0,T):
+def accept_reject_v(N,E0,T,delta):
     
     xmin = 0
     xmax = E0
@@ -55,7 +56,7 @@ def accept_reject_v(N,E0,T):
     while n_accept < N:
         t = (xmax - xmin) * np.random.rand() + xmin
         y = np.random.rand()
-        if y < vaughan_pdf_corrected(t, E0, T) / vaughan_pdf_corrected(T, E0, T):
+        if y < vaughan_pdf_corrected(t, E0, T,delta) / vaughan_pdf_corrected(T, E0, T,delta):
             n_accept += 1
             x_list.append(t)
     return x_list
@@ -102,6 +103,36 @@ def sey_coefficient(E, theta, E_th=0, Emax=370, delta_max=3.35, k_delta=1, k_E=1
     
     return delta
 
+# Precompute the CDF and its inverse
+def precompute_inverse_cdf(E0, T, delta, n_points=1000):
+    E_values = np.linspace(0, E0, n_points)
+    pdf_values = vaughan_pdf_corrected(E_values, E0, T, delta)
+    cdf_values = np.cumsum(pdf_values) * (E_values[1] - E_values[0])  # Trapezoidal approximation
+    cdf_values /= cdf_values[-1]  # Ensure CDF is normalized to 1
+    
+    # Ensure the CDF is strictly increasing
+    cdf_values = np.clip(cdf_values, 0, 1)
+    
+    inverse_cdf_func = interp1d(cdf_values, E_values, bounds_error=False, fill_value=(0, E0))
+    return inverse_cdf_func
+
+# Generate random samples using the precomputed inverse CDF
+def generate_samples_precomputed(n_samples, inverse_cdf_func):
+    uniform_randoms = np.random.uniform(0, 1, n_samples)
+    samples = inverse_cdf_func(uniform_randoms)
+    return samples
+
+# Parameters
+E0 = 150  # Example value for E0
+T = 10.5  # Example value for T
+n_samples = 1
+delta = 1
+# Precompute the inverse CDF
+def inverse_cdf_output(n_samples, E0, T,delta):
+    inverse_cdf_func = precompute_inverse_cdf(E0, T,delta)
+    samples = generate_samples_precomputed(n_samples, inverse_cdf_func)
+    
+    return samples
 
 
 plot = False
