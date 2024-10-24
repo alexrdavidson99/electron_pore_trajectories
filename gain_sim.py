@@ -47,7 +47,7 @@ def run_simulation(r, v, single_run=True):
                 electrons_yield = 0
                 self.yield_term = 0
             
-            for _ in range(electrons_yield):  # Assume each bounce generates secondary electrons
+            for _ in range(electrons_yield):  # if electrons_yield > 0 else 0
                 secondary = Electron(
                     position=end_point,
                     impact_energy=self.impact_energy,  # Example impact_energy reduction
@@ -68,9 +68,11 @@ def run_simulation(r, v, single_run=True):
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position
-        d = 2 * 0.006 * 38.3  
+        #d = 2 * 0.006 * 38.3  
+        d = 0.02*40
         E = v * (c ** 2) / (d * m) 
         field_orientation = np.array([0., 0., 1])
+        #field_orientation = np.array([np.sin(0.13962634), 0, np.cos(0.13962634)])
         a0 = E * field_orientation
 
         if electron.bounce_id == 0:
@@ -215,16 +217,7 @@ def run_simulation(r, v, single_run=True):
         #poisson_mean = poisson_mean[0]
         electron_yield_values_list.append(poisson_mean)
     #print(f"electron_yield_values_list {electron_yield_values_list}")
-    plt.figure(figsize=(12, 6))
-    plt.scatter(energies,electron_yield_values_list, color='blue')
-    plt.xlabel('Electron Energy')
-    plt.ylabel('Electron Yield')
-    plt.title('Electron Yield vs. Electron Energy')
-    plt.figure(figsize=(12, 6))
-    plt.hist(electron_yield_values_list, bins=100, alpha=0.75, range=(0,4), label='Electron Energy')
-    plt.xlabel('Electron Yield')
-    plt.ylabel('Number of Electrons')
-    plt.title(f'Electron Yield Distribution mean = {np.mean(electron_yield_values_list)}')
+    
 
     #plt.hist(electron_yield_values_list, bins=100, alpha=0.75, range=(0,100), label='Electron Energy')
 
@@ -247,6 +240,19 @@ def run_simulation(r, v, single_run=True):
 
     print((bounce_counts))
     if single_run == True:
+
+        plt.figure(figsize=(12, 6))
+        plt.scatter(energies,electron_yield_values_list, color='blue')
+        plt.xlabel('Electron Energy')
+        plt.ylabel('Electron Yield')
+        plt.title('Electron Yield vs. Electron Energy')
+        plt.figure(figsize=(12, 6))
+        plt.hist(electron_yield_values_list, bins=100, alpha=0.75, range=(0,4), label='Electron Energy')
+        plt.xlabel('Electron Yield')
+        plt.ylabel('Number of Electrons')
+        plt.title(f'Electron Yield Distribution mean = {np.mean(electron_yield_values_list)}')
+
+
         # Prepare data for plotting
         bounces = list(bounce_counts.keys())
         electron_counts = list(bounce_counts.values())
@@ -337,17 +343,18 @@ def run_simulation(r, v, single_run=True):
 gain_spread = []
 
 #range_of_r = np.linspace(0.002, 0.0145, num=20)
-range_of_r = [0.005]
-for i in range(len(range_of_r)):
-    r = range_of_r[i]
-    v = 100
+range_of_r = [0.02]
+range_of_v = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+for i in range(len(range_of_v)):
+    r = range_of_r[0]
+    v = range_of_v[i]
     gain_spread_mean = []
-    for j in range(1):
-        count_above_threshold= run_simulation(r,v,single_run=True)
-        #gain_spread_mean.append(count_above_threshold)
-        gain_spread.append(count_above_threshold)
-    #gain_spread_mean = np.mean(gain_spread_mean)
-    #gain_spread.append(gain_spread_mean)
+    for j in range(10):
+        count_above_threshold= run_simulation(r,v,single_run=False)
+        gain_spread_mean.append(count_above_threshold)
+        #gain_spread.append(count_above_threshold)
+    gain_spread_mean = np.mean(gain_spread_mean)
+    gain_spread.append(gain_spread_mean)
     
 print(f"gain spread mean {gain_spread_mean}")
 
@@ -355,12 +362,13 @@ print(f"gain spread {gain_spread}")
 single_run = False
 if single_run == False:  
     plt.figure(figsize=(12, 6))
-    plt.hist(gain_spread, bins=10, alpha=0.75, label='Electron Energy',log=True)
-    plt.xlabel('Number of Electrons leaving the pore')
-    plt.ylabel('events')
-    #plt.scatter(range_of_r, gain_spread, color='blue')
-    #plt.ylabel('Number of Electrons leaving the pore')
-    #plt.xlabel('Pore Radius[mm]')
+    #plt.hist(gain_spread, bins=10, alpha=0.75, label='Electron Energy',log=True)
+    #plt.xlabel('Number of Electrons leaving the pore')
+    #plt.ylabel('events')
+    plt.scatter(range_of_v, gain_spread, color='blue')
+    plt.ylabel('Number of Electrons leaving the pore')
+    plt.xlabel('voltage V')
+    plt.yscale('log')
 plt.show()
 
 

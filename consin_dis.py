@@ -124,7 +124,7 @@ if plot:
     v_bin = np.array(v_bin)
     fig = plt.figure()
     ax2 = fig.add_subplot(212, projection='3d')
-    ax2.scatter(v_bin[:, 0],v_bin[:, 1],v_bin[:, 2],c='r');
+    ax2.scatter(v_bin[:, 0],v_bin[:, 1],v_bin[:, 2],c='r',s=0.005);
     ax2.set_xlabel('angle')
     ax2.set_ylabel('normalized count')
     plt.show()

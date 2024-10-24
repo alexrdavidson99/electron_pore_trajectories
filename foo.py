@@ -59,11 +59,12 @@ for V in voltage_values:
     for d0 in distance_values:
         
         count = 0
-        for i in range (0, 10000):
-            x1 = np.array([r, 0, d0])
+        for i in range (0, 1000):
+            hit = np.sqrt(r**2 - (0.003**2))
+            x1 = np.array([hit, 0.003, d0])
             vel_a, theta = cosine_dis(x1, r)
-        
-            v = np.sqrt(2*1/m)*c
+            emmited_energy = 2
+            v = np.sqrt(2*emmited_energy/m)*c
             v1 = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
             
             
@@ -78,7 +79,7 @@ for V in voltage_values:
 
             if x2[2] >= d:
                 count+=1
-        count_for_e.append(count/10000)
+        count_for_e.append(count/1000)
     count_results[V] = count_for_e
 
 print(f"Number of particles that exited the pore: {count_for_e}")
@@ -88,64 +89,30 @@ end_z = []
 
 colors = ['r', 'b', 'g', 'y', 'm', 'c', 'k', 'w']
 for idx, V in enumerate(voltage_values):
-    plt.plot(distance_values, count_results[V], color=colors[idx], label=f"V = {V} V")
+ plt.plot((distance_values), count_results[V], color=colors[idx], label=f"V = {V} V")
 plt.legend()
 plt.xlabel("starting distance from the pore entrance exit (mm)")
 plt.ylabel("Probability of exiting the pore")
-plt.title("Probability of exiting the pore for different starting distances but keeping energy constant at 1 eV")
+plt.title("Probability of electrons exiting the pore for different starting distances but keeping energy constant at 1 eV")
 plt.yscale('log')
 
+data = {'distance_values': distance_values}
+
+# Add count_results for each voltage to the dictionary
+for V in voltage_values:
+    data[f'V_{V}'] = count_results[V]
+
+# Create a DataFrame from the dictionary
+df = pd.DataFrame(data)
+df.to_csv(f'prob_results_{emmited_energy}ev.csv', index=False)
+print(df)
 plt.figure()
-#plt.plot(energy_values, count_for_e)
-plt.xlabel("Energy (eV)")
-plt.ylabel("Probability of exiting the pore")
-plt.title("Probability of exiting the pore for different voltages")
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-#ax.scatter(x_end, z_end, y_end, c='r', marker='o')
+plt.hist(angle, bins=100, alpha=0.75, label=f'angle', density=True,color='r')
+plt.title(f'angle of emmited electrons')
+plt.xlabel('angle')
+plt.ylabel('normalized count')
 
 
-# Cylinder parameters
-origin = np.array([0, 0, 0])
-p0 = np.array([0, 1e-3, 0])
-p1 = np.array([0, d, 0])
-R = r  # Radius of the cylinder
-
-# Vector in the direction of the axis
-v = p1 - p0
-mag = norm(v)
-v = v / mag
-
-# Two perpendicular vectors to the axis vector
-not_v = np.array([1, 0, 0])
-if np.allclose(v, not_v):
-    not_v = np.array([0, 1, 0])
-
-n1 = np.cross(v, not_v)
-n1 /= norm(n1)
-n2 = np.cross(v, n1)
-
-# Surface ranges
-theta = np.linspace(0, 2 * np.pi, 100)
-z = np.linspace(0, mag, 100)
-theta, z = np.meshgrid(theta, z)
-
-# Generate coordinates for surface
-X = p0[0] + R * np.sin(theta) * n1[0] + R * np.cos(theta) * n2[0] + v[0] * z
-Y = p0[1] + R * np.sin(theta) * n1[1] + R * np.cos(theta) * n2[1] + v[1] * z
-Z = p0[2] + R * np.sin(theta) * n1[2] + R * np.cos(theta) * n2[2] + v[2] * z
-
-colors = np.where(((Y >= 0) & (Y <= 1e-2)) | ((Y >= 1.8e-1) & (Y <= 2e-1)), 'red', 'aqua')
-
-# Plot the surface
-ax.plot_surface(X, Y, Z, facecolors=colors, alpha=0.02)
-
-
-plt.figure()
-x = np.linspace(0, 0.5 * np.pi, 1000)
-y = np.cos(x)
-plt.plot(x, y)
-plt.hist(angle, bins=10, density=True, alpha=0.6, color='g')
 plt.show()
  
 
