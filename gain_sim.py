@@ -12,7 +12,7 @@ from consin_dis import cosine_dis, calculate_theta_cylinder
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-def run_simulation(r, v, single_run=True):
+def run_simulation(r, v, starting_energy, single_run=True):
     # Initialize variables that were previously global
     first_bounce = True
     max_electrons = 1000000
@@ -145,7 +145,7 @@ def run_simulation(r, v, single_run=True):
 
     def gen_electron():
         # Generate the first electron
-        return Electron(position=[0, 0, 0], impact_energy=200, angle=np.rad2deg(45), bounce_id=0, yield_term=1.0)
+        return Electron(position=[0, 0, 0], impact_energy=starting_energy, angle=np.rad2deg(45), bounce_id=0, yield_term=1.0)
 
     electrons = []
     if first_bounce:
@@ -348,9 +348,10 @@ range_of_v = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 for i in range(len(range_of_v)):
     r = range_of_r[0]
     v = range_of_v[i]
+    starting_energy = 7000
     gain_spread_mean = []
     for j in range(10):
-        count_above_threshold= run_simulation(r,v,single_run=False)
+        count_above_threshold= run_simulation(r,v,starting_energy,single_run=False)
         gain_spread_mean.append(count_above_threshold)
         #gain_spread.append(count_above_threshold)
     gain_spread_mean = np.mean(gain_spread_mean)
