@@ -61,7 +61,7 @@ def accept_reject_v(N,E0,T,delta):
             x_list.append(t)
     return x_list
 
-def sey_coefficient(E, theta, E_th=0, Emax=370, delta_max=4, k_delta=1, k_E=1, alpha=0.25):
+def sey_coefficient(E, theta, E_th=0, Emax=355, delta_max=3.7, k_delta=1, k_E=1, alpha=0.25):
     """
     Computes the SEY coefficient using the Modified Vaughan's model.
     
@@ -125,8 +125,8 @@ def generate_samples_precomputed(n_samples, inverse_cdf_func):
 # Parameters
 E0 = 150  # Example value for E0
 T = 10.5  # Example value for T
-n_samples = 1
-delta = 1
+n_samples = 100000
+delta = 100
 # Precompute the inverse CDF
 def inverse_cdf_output(n_samples, E0, T,delta):
     inverse_cdf_func = precompute_inverse_cdf(E0, T,delta)
@@ -173,11 +173,13 @@ if plot == True:
     plt.figure()
 
     # Calculate the PDF values using the correct parameters
-    pdf_values_corrected = vaughan_pdf_corrected(E, E0, T)
+    pdf_values_corrected = vaughan_pdf_corrected(E, E0, T, delta)
     plt.plot(E, pdf_values_corrected, 'r-', lw=2)
-    x_list= accept_reject_v(1000,E0,T)
+    x_list= accept_reject_v(10000,E0,T,delta)
+    samples = inverse_cdf_output(n_samples, E0, T,delta)
     # Plot the PDF
     plt.hist(x_list, bins=50, density=True, alpha=0.6, label='Accept Reject histogram')
+    plt.hist(samples, bins=50, density=True, alpha=0.6, label='Precomputed histogram')
 
 
     # Plot the corrected PDF

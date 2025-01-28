@@ -6,23 +6,18 @@ import matplotlib.pyplot as plt
 from random import random
 import math
 
-
 def cosine_dis():
 
     angle_dis = []
     vel_a = []
     nbins = 45
     delta_bin = 90 / (nbins)
-
     # surface properties
     angle_radians = 180
     #angle_radians = 0
     tang1 = np.array([1, 0, 0])  # Tangential direction 1
     tang2 = np.array([0, 0, 1])  # Tangential direction 2
     norm = np.array([0, 1, 0])   # Normal to the y-axis
-
-  
-
     # sample random points
     for it in range(0, 1):
         sin_theta = math.sqrt(random())
@@ -54,10 +49,7 @@ def cosine_dis():
         #print(np.sqrt(vel[0]**2 + vel[1]**2 + vel[2]**2))
         theta = math.acos(cos_theta) * 180 / math.pi;
 
-
-
     return vel_a, theta
-
 
 
 def solve_for_intercept_time(x0, v0, acc, target_distance):
@@ -88,19 +80,20 @@ def solve_for_intercept_time(x0, v0, acc, target_distance):
 angle = []
 
 
-d_list = [1.55,1.132,0.7166,0.3]
+d_list = [100,200,700]
 for j in range(len(d_list)):
     hit_position_x = []
     hit_position_y = []
+    hit_time = []
     for i in range(200):
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = 200.   # electrods potential in V
-        d = d_list[j]  # pore depth in mm
+        V = d_list[j]   # electrods potential in V
+        d = 1.55  # pore depth in mm
 
         m = 511e3    # in eV
 
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 2 # in eV
+        e = 1 # in eV
         v = np.sqrt(2*e/m)*c  # velocity in mm/ns
 
         orientation = np.array([0, 1,0])
@@ -127,11 +120,14 @@ for j in range(len(d_list)):
         xi = step_position(x0, new_velocity, a0, ti)
         hit_position_x.append(xi[0])
         hit_position_y.append(xi[2])
-        print(f" new position {xi}")
+        hit_time.append(ti)
     #plt.scatter(hit_position_x, hit_position_y, alpha=0.5, label=f"d = {d_list[j]}")
-    plt.hist(hit_position_x, bins=10, density=True, alpha=0.6, label=f"d = {d_list[j]} mm")
-    plt.title("Impact position")
-    plt.xlabel("x position (mm)")
-    plt.ylabel("hits")
+    bin_edges = np.arange(min(hit_position_x), max(hit_position_x) + 0.05, 0.05)
+    #plt.hist(hit_position_x, bins=bin_edges, density=True, alpha=0.6, label=f"d = {d_list[j]}")
+    plt.hist(hit_time, bins=30, density=True, alpha=0.6, label=f"V = {d_list[j]} ")
+    #plt.title("Impact position")
+    #plt.xlabel("position (mm)")
+    plt.xlabel("time (ns)")
+    plt.ylabel("counts")
 plt.legend()
 plt.show()

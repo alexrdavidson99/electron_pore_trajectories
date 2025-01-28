@@ -10,10 +10,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
 from scipy.linalg import norm
 
-
-
-
-
 c = scipy.constants.speed_of_light*1e-6 # in mm/ns
 V = 1000   # electrods potential in V
 voltage_values = [500, 700, 1000]

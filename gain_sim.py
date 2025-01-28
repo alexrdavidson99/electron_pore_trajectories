@@ -67,9 +67,8 @@ def run_simulation(r, v, starting_energy, single_run=True):
         """
 
         c = scipy.constants.speed_of_light * 1e-6
-        x0 = electron.position  # Initial position
-        #d = 2 * 0.006 * 38.3  
-        d = 0.02*40
+        x0 = electron.position  # Initial position  
+        d = r*2*46
         E = v * (c ** 2) / (d * m) 
         field_orientation = np.array([0., 0., 1])
         #field_orientation = np.array([np.sin(0.13962634), 0, np.cos(0.13962634)])
@@ -77,8 +76,9 @@ def run_simulation(r, v, starting_energy, single_run=True):
 
         if electron.bounce_id == 0:
             starting_electron_energy = electron.impact_energy
-            
-            start_orientation = np.array([np.sin(0.13962634), 0., np.cos(0.13962634)])
+            angle_of_pore =np.deg2rad(8)
+            print(f"angle of pore in rads {angle_of_pore}")
+            start_orientation = np.array([np.sin(angle_of_pore), 0., np.cos(angle_of_pore)])
             v = np.sqrt(2 * starting_electron_energy / m) * c
             
             v0 = v * start_orientation
@@ -145,7 +145,7 @@ def run_simulation(r, v, starting_energy, single_run=True):
 
     def gen_electron():
         # Generate the first electron
-        return Electron(position=[0, 0, 0], impact_energy=starting_energy, angle=np.rad2deg(45), bounce_id=0, yield_term=1.0)
+        return Electron(position=[0, 0, 0], impact_energy=starting_energy, angle=np.rad2deg(8), bounce_id=0, yield_term=1.0)
 
     electrons = []
     if first_bounce:
@@ -157,9 +157,9 @@ def run_simulation(r, v, starting_energy, single_run=True):
     total_electron_count = 0
     end_position_count = 0
     r= r
-    end_position_threshold = 0.006*2*38.3
+    end_position_threshold = r*2*46 #38.3
     E0 = 50  # eV, assumed value
-    T = 7.5  # eV, assumed temperature
+    T = 1  # eV, assumed temperature
     delta = 1
     #initial_energy_distribution = accept_reject_v(100000,E0,T,delta)
   
@@ -319,7 +319,7 @@ def run_simulation(r, v, starting_energy, single_run=True):
         plt.grid(True)
 
         plt.figure(figsize=(12, 6))
-        #plt.scatter(end_positions[:, 0], end_positions[:, 2], color='blue', label='Start Positions')
+        plt.scatter(end_positions[:, 0], end_positions[:, 2], color='blue', label='Start Positions')
         plt.hist(end_positions[:,2], bins=200, color='red', label='End Positions')
         plt.xlim(0,end_position_threshold)
         plt.xlabel('Z Position mm')
@@ -328,7 +328,7 @@ def run_simulation(r, v, starting_energy, single_run=True):
         plt.figure(figsize=(12, 6))
         plt.hist(energies, bins=100, alpha=0.75, range=(0,1000), label='Electron Energy')
         plt.hist(energies_out, bins=100, alpha=0.75,range=(0,1000), label='Electron Energy out of pore')
-        #print(f"energies {np.max(energies)}")
+        print(f"energies {np.max(energies)}")
         try:
             print(f"energies_out {np.max(energies_out)}")
         except Exception as e:
@@ -340,33 +340,34 @@ def run_simulation(r, v, starting_energy, single_run=True):
         plt.legend()
     return  count_above_threshold
 
-gain_spread = []
+gain_spread_mean_list = []
 
 #range_of_r = np.linspace(0.002, 0.0145, num=20)
-range_of_r = [0.02]
-range_of_v = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+range_of_r = [0.005]
+range_of_v = [700]
 for i in range(len(range_of_v)):
     r = range_of_r[0]
     v = range_of_v[i]
-    starting_energy = 7000
-    gain_spread_mean = []
-    for j in range(10):
+    starting_energy = 700
+    gain_spread = []
+    for j in range(500):
         count_above_threshold= run_simulation(r,v,starting_energy,single_run=False)
-        gain_spread_mean.append(count_above_threshold)
+        gain_spread.append(count_above_threshold)
         #gain_spread.append(count_above_threshold)
-    gain_spread_mean = np.mean(gain_spread_mean)
-    gain_spread.append(gain_spread_mean)
+    plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
+    gain_spread_mean = np.mean(gain_spread)
+    gain_spread_mean_list.append(gain_spread_mean)
     
 print(f"gain spread mean {gain_spread_mean}")
 
-print(f"gain spread {gain_spread}")
+print(f"gain spread {gain_spread_mean_list}")
 single_run = False
 if single_run == False:  
     plt.figure(figsize=(12, 6))
     #plt.hist(gain_spread, bins=10, alpha=0.75, label='Electron Energy',log=True)
     #plt.xlabel('Number of Electrons leaving the pore')
     #plt.ylabel('events')
-    plt.scatter(range_of_v, gain_spread, color='blue')
+    plt.scatter(range_of_v, gain_spread_mean_list, color='blue')
     plt.ylabel('Number of Electrons leaving the pore')
     plt.xlabel('voltage V')
     plt.yscale('log')
