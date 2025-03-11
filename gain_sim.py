@@ -5,14 +5,14 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.constants
 from scipy.linalg import norm
 
-from energy_dis import accept_reject_v, sey_coefficient, inverse_cdf_output
+from energy_dis import accept_reject_v, sey_coefficient, inverse_cdf_output, universal_yield_curve,sey_coefficient_guest
 from stepping import electron_yield, solve_for_intercept_time, step_position, step_energy, step_velocity
 from consin_dis import cosine_dis, calculate_theta_cylinder
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-def run_simulation(r, v, starting_energy, single_run=True):
+def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
     # Initialize variables that were previously global
     first_bounce = True
     max_electrons = 1000000
@@ -26,6 +26,7 @@ def run_simulation(r, v, starting_energy, single_run=True):
         secondaries: List['Electron'] = field(default_factory=list)
         end_point: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
         yield_term: float = 9.0
+        emitted_energy: float = 0
         # To store the end point
 
         def parent(self):
@@ -36,24 +37,50 @@ def run_simulation(r, v, starting_energy, single_run=True):
             secondaries = []
         
             poisson_mean = sey_coefficient(impact_energy, angle)
-            poisson_mean = int(np.round(poisson_mean))
-            #poisson_mean = np.random.poisson(poisson_mean, 1)
-            #poisson_mean = poisson_mean[0]
+            #poisson_mean = sey_coefficient_guest(impact_energy, angle )
+            
+            #poisson_mean = int(np.round(poisson_mean))
+            poisson_mean = np.random.poisson(poisson_mean, 1)
+            poisson_mean = poisson_mean[0]
             electrons_yield = poisson_mean
             self.yield_term = poisson_mean
-    
+
+            total_assigned_energy = 0
+            available_energy = self.impact_energy  # Track remaining energy
+            delta = poisson_mean  
             
+            
+
             if end_point[2] > end_position_threshold:
                 electrons_yield = 0
                 self.yield_term = 0
             
-            for _ in range(electrons_yield):  # if electrons_yield > 0 else 0
+            for _ in range(electrons_yield):
+                initial_energy_distribution = inverse_cdf_output(1000, available_energy, T, delta)  # if electrons_yield > 0 else 0
+                int_energy_from_emitted_electron = random.choice(initial_energy_distribution)
+
+                # Ensure sum of energies does not exceed impact_energy
+                if total_assigned_energy + int_energy_from_emitted_electron > self.impact_energy:
+                    print(f"sum of energies is higher then impact_energy, electrons {delta}")
+                    break  # Stop generating secondaries
+                
+               
+                available_energy -= int_energy_from_emitted_electron
+                
+                total_assigned_energy += int_energy_from_emitted_electron
+                if available_energy < 0:
+                    print(f"error {available_energy} ")
+
+                #emitted_energy = self.emitted_energy 
+
                 secondary = Electron(
                     position=end_point,
-                    impact_energy=self.impact_energy,  # Example impact_energy reduction
+                    impact_energy = int_energy_from_emitted_electron,
+                    #impact_energy=self.impact_energy,  # Example impact_energy reduction
                     angle=self.angle,  # Example angle change
                     bounce_id=self.bounce_id + 1,
                     initiating_electron=self
+
                     
                 )
                 secondaries.append(secondary)
@@ -68,7 +95,8 @@ def run_simulation(r, v, starting_energy, single_run=True):
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position  
-        d = r*2*46
+        d = 0.05*2*46
+        #d = r*2*46
         E = v * (c ** 2) / (d * m) 
         field_orientation = np.array([0., 0., 1])
         #field_orientation = np.array([np.sin(0.13962634), 0, np.cos(0.13962634)])
@@ -76,8 +104,8 @@ def run_simulation(r, v, starting_energy, single_run=True):
 
         if electron.bounce_id == 0:
             starting_electron_energy = electron.impact_energy
-            angle_of_pore =np.deg2rad(8)
-            print(f"angle of pore in rads {angle_of_pore}")
+            angle_of_pore = electron.angle 
+            print(f"angle of pore {np.rad2deg(angle_of_pore)}")
             start_orientation = np.array([np.sin(angle_of_pore), 0., np.cos(angle_of_pore)])
             v = np.sqrt(2 * starting_electron_energy / m) * c
             
@@ -88,19 +116,18 @@ def run_simulation(r, v, starting_energy, single_run=True):
             hit_position = step_position(x0, v0, a0, t)
             
             impact_energy = step_energy(v0, a0, t, m)
-            print(f"impact energy {impact_energy}")
+            print(f"impact energy  {impact_energy}")
             
             end_velocity = step_velocity(v0, a0, t)
             
             impact_angle, impact_angle_d = calculate_theta_cylinder(end_velocity, hit_position, r)
             
-            
-
+        
         else:
-            E_im = electron.impact_energy
-            delta = 1.5
-            initial_energy_distribution = inverse_cdf_output(1, E_im, T, delta)
-            int_energy_from_emmited_electron = random.choice(initial_energy_distribution)
+            int_energy_from_emmited_electron = electron.impact_energy
+            #delta = 1
+            #initial_energy_distribution = inverse_cdf_output(10, E_im, T, delta)
+            #int_energy_from_emmited_electron = random.choice(initial_energy_distribution)
             
             v_initial = np.sqrt((int_energy_from_emmited_electron / 511e3) * 2 * (c ** 2))
             vel_a, theta = cosine_dis(electron.position , r)
@@ -145,7 +172,7 @@ def run_simulation(r, v, starting_energy, single_run=True):
 
     def gen_electron():
         # Generate the first electron
-        return Electron(position=[0, 0, 0], impact_energy=starting_energy, angle=np.rad2deg(8), bounce_id=0, yield_term=1.0)
+        return Electron(position=[0, 0, 0], impact_energy=starting_energy, angle=np.deg2rad(starting_angle), bounce_id=0, yield_term=1.0)
 
     electrons = []
     if first_bounce:
@@ -157,15 +184,9 @@ def run_simulation(r, v, starting_energy, single_run=True):
     total_electron_count = 0
     end_position_count = 0
     r= r
-    end_position_threshold = r*2*46 #38.3
-    E0 = 50  # eV, assumed value
-    T = 1  # eV, assumed temperature
-    delta = 1
-    #initial_energy_distribution = accept_reject_v(100000,E0,T,delta)
-  
-    #initial_energy_distribution = inverse_cdf_output(100000, E0, T, delta)
+    end_position_threshold = 0.05*2*46 #38.3
+    T = 2.5  # eV, assumed temperature
     
-
     start_positions = []
     end_positions = []
     energies = []
@@ -195,9 +216,6 @@ def run_simulation(r, v, starting_energy, single_run=True):
             energies.append(e.impact_energy)
             electron_yield_values.append(e.yield_term)
 
-            
-
-
         all_electrons.extend(new_electrons)
         electrons.extend(new_electrons)
         start_positions.append(e.position)
@@ -210,11 +228,12 @@ def run_simulation(r, v, starting_energy, single_run=True):
     # Plotting impact_energy vs. bounces
     electron_yield_values_list = []
     for i in energies:
-        poisson_mean = sey_coefficient(i, 0)
-        poisson_mean = int(np.round(poisson_mean))
+        #poisson_mean = sey_coefficient(i, 0)
+        poisson_mean = sey_coefficient_guest(i,0)
+        #poisson_mean = int(np.round(poisson_mean))
         
-        #poisson_mean = np.random.poisson(poisson_mean, 1)
-        #poisson_mean = poisson_mean[0]
+        poisson_mean = np.random.poisson(poisson_mean, 1)
+        poisson_mean = poisson_mean[0]
         electron_yield_values_list.append(poisson_mean)
     #print(f"electron_yield_values_list {electron_yield_values_list}")
     
@@ -319,12 +338,29 @@ def run_simulation(r, v, starting_energy, single_run=True):
         plt.grid(True)
 
         plt.figure(figsize=(12, 6))
-        plt.scatter(end_positions[:, 0], end_positions[:, 2], color='blue', label='Start Positions')
-        plt.hist(end_positions[:,2], bins=200, color='red', label='End Positions')
+        #plt.scatter(end_positions[:, 0], end_positions[:, 2], color='blue', label='Start Positions')
+        print(f"end positions {end_positions[:,2]}")
+        bins = np.arange(0, end_position_threshold + 0.005, 0.005)
+        
+        hist_vals, bin_edges, _  = plt.hist(end_positions[:,2], bins=bins, color='red', label='End Positions')
+        plt.hist(end_positions[:,2], bins=bins, color='red', label='End Positions')
+        plt.scatter(bin_edges[:-1]+0.005/2, hist_vals, color='green', label='End Positions')    
         plt.xlim(0,end_position_threshold)
         plt.xlabel('Z Position mm')
         plt.ylabel('Number of Electrons')
         plt.title('Electron hit Position Distribution in the Z direction')
+
+        data_to_save = np.column_stack((bin_edges[:-1]+0.005/2, hist_vals))
+        #np.savetxt("end_positions_2.txt", data_to_save,  delimiter=",")
+        #existing_data = np.loadtxt("C:/Users/lexda/PycharmProjects/electron_pore_trajectories/end_positions_2.txt", delimiter=",")
+        # combined_data = np.vstack((existing_data, data_to_save))
+        # combined_data = combined_data[np.argsort(combined_data[:, 0])]
+        # unique_bin_edges, indices = np.unique(combined_data[:, 0], return_index=True)
+        # summed_values = np.add.reduceat(combined_data[:, 1], indices)
+        # updated_data = np.column_stack((unique_bin_edges, summed_values))
+        #np.savetxt("end_positions_2.txt", updated_data, delimiter=",", comments='')
+
+
         plt.figure(figsize=(12, 6))
         plt.hist(energies, bins=100, alpha=0.75, range=(0,1000), label='Electron Energy')
         plt.hist(energies_out, bins=100, alpha=0.75,range=(0,1000), label='Electron Energy out of pore')
@@ -338,25 +374,31 @@ def run_simulation(r, v, starting_energy, single_run=True):
         plt.ylabel('Number of Electrons')
         plt.title('Electron Energy Distribution')
         plt.legend()
+    
     return  count_above_threshold
 
 gain_spread_mean_list = []
 
-#range_of_r = np.linspace(0.002, 0.0145, num=20)
-range_of_r = [0.005]
+#range_of_r = np.linspace(0.025, 0.35, num=30)
+range_of_r =  [0.08]
+#range_of_v = [1200,1000,800,600]
 range_of_v = [700]
-for i in range(len(range_of_v)):
-    r = range_of_r[0]
-    v = range_of_v[i]
-    starting_energy = 700
-    gain_spread = []
-    for j in range(500):
-        count_above_threshold= run_simulation(r,v,starting_energy,single_run=False)
-        gain_spread.append(count_above_threshold)
-        #gain_spread.append(count_above_threshold)
-    plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
-    gain_spread_mean = np.mean(gain_spread)
-    gain_spread_mean_list.append(gain_spread_mean)
+angles = [9] #list(range(2, 40, 5))
+number_of_runs = 1
+
+for v in range_of_v:
+    for r in range_of_r:
+        
+        starting_energy =  20
+        starting_angle = angles[0]
+        gain_spread = []
+        for j in range(number_of_runs):
+            count_above_threshold= run_simulation(r,v,starting_energy,starting_angle,single_run=True)
+            gain_spread.append(count_above_threshold)
+            #gain_spread.append(count_above_threshold)
+        plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
+        gain_spread_mean = np.mean(gain_spread)
+        gain_spread_mean_list.append((v, r, gain_spread_mean))
     
 print(f"gain spread mean {gain_spread_mean}")
 
@@ -364,12 +406,15 @@ print(f"gain spread {gain_spread_mean_list}")
 single_run = False
 if single_run == False:  
     plt.figure(figsize=(12, 6))
-    #plt.hist(gain_spread, bins=10, alpha=0.75, label='Electron Energy',log=True)
-    #plt.xlabel('Number of Electrons leaving the pore')
-    #plt.ylabel('events')
-    plt.scatter(range_of_v, gain_spread_mean_list, color='blue')
+
+    for v in range_of_v:
+        r_values = np.array( [r for v_val, r, gain in gain_spread_mean_list if v_val == v])
+        gain_values = [gain for v_val, r, gain in gain_spread_mean_list if v_val == v]
+        plt.scatter((0.05*2*46)/(r_values*2), gain_values, label=f'v = {v:.2f}')
+
     plt.ylabel('Number of Electrons leaving the pore')
-    plt.xlabel('voltage V')
+    plt.xlabel('L/D')
+    plt.legend()
     plt.yscale('log')
 plt.show()
 

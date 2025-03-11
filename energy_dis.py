@@ -14,6 +14,11 @@ def test(impact_energy, angle):
     pos_0 = np.random.poisson(poisson_mean, 500)
     return pos_0
 
+def universal_yield_curve(E, Emax=339.79020249876953 , delta_max=3.9283773281400824,sigma= 1.319094301238391):
+
+    delta = delta_max*np.exp((-(np.log(E/Emax))**2)/(2*(sigma**2)))
+    return delta
+
 # Defining the PDF with the correct incomplete gamma function parameters
 def vaughan_pdf_corrected(E, E0, T, delta):
     # δ(E0, θ0) 
@@ -61,7 +66,7 @@ def accept_reject_v(N,E0,T,delta):
             x_list.append(t)
     return x_list
 
-def sey_coefficient(E, theta, E_th=0, Emax=355, delta_max=3.7, k_delta=1, k_E=1, alpha=0.25):
+def sey_coefficient(E, theta, E_th=0, Emax=700, delta_max=4.7, k_delta=1, k_E=1, alpha=0.25):
     """
     Computes the SEY coefficient using the Modified Vaughan's model.
     
@@ -99,9 +104,17 @@ def sey_coefficient(E, theta, E_th=0, Emax=355, delta_max=3.7, k_delta=1, k_E=1,
     elif 1 <= v_E <= 3.6:
         delta = delta_max_theta * (v_E * np.exp(1 - v_E))**alpha
     else:  # v(E) > 3.6
-        delta = delta_max_theta * 1.125 * v_E**-0.65
+        delta = delta_max_theta * 1.125 * v_E**-0.35
     
     return delta
+
+def sey_coefficient_guest(E, theta, Emax=700, delta_max=4.7, alpha=0.6, beta=0.65):
+    C = np.cos(theta)*np.sqrt(E/ Emax)
+    C = abs(C)
+    #beta = 0.62 if E < Emax else 0.65
+    term1 = (E / Emax) * np.sqrt(C)
+    exp_term = np.exp(alpha * (1 - C) + beta * (1 - term1))
+    return delta_max * term1 * exp_term
 
 # Precompute the CDF and its inverse
 def precompute_inverse_cdf(E0, T, delta, n_points=1000):
@@ -122,17 +135,23 @@ def generate_samples_precomputed(n_samples, inverse_cdf_func):
     samples = inverse_cdf_func(uniform_randoms)
     return samples
 
-# Parameters
-E0 = 150  # Example value for E0
-T = 10.5  # Example value for T
-n_samples = 100000
-delta = 100
-# Precompute the inverse CDF
+
 def inverse_cdf_output(n_samples, E0, T,delta):
     inverse_cdf_func = precompute_inverse_cdf(E0, T,delta)
     samples = generate_samples_precomputed(n_samples, inverse_cdf_func)
     
     return samples
+
+
+
+
+# Parameters
+E0 = 150  # Example value for E0
+T = 10  # Example value for T
+n_samples = 100000
+delta = 1
+# Precompute the inverse CDF
+
 
 
 plot = False
@@ -149,7 +168,7 @@ if plot == True:
 
     plt.figure()
     E0 = 150  # eV, assumed value
-    T = 10.5  # eV, assumed temperature
+    T = 10  # eV, assumed temperature
     # Energy range for plotting
     E = np.linspace(0, 600, 5000)
     r = 0.025  # Radius of the cylinder
