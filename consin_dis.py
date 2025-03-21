@@ -13,13 +13,12 @@ import numpy as np
 
 
 def cosine_dis(xi,r):
-
-    count = []
+    """
+    Sample random points from a cosine distribution.
+    """
     angle_dis = []
     vel_a = []
-    nbins = 45
-    delta_bin = 90 / (nbins)
-
+    
     # surface properties
     tang1 = [-xi[1]/r, xi[0]/r, 0]
     tang2 = [0, 0, -1]

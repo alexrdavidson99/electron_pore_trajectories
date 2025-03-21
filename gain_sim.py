@@ -12,6 +12,26 @@ from consin_dis import cosine_dis, calculate_theta_cylinder
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
+def generate_electron_yield(mean_yield: float) -> int:
+    # Base number of electrons emitted (integer part)
+    base_electrons = int(mean_yield)
+ 
+    # Probability of emitting an additional electron (decimal part)
+    additional_prob = mean_yield - base_electrons
+
+    # Roll a random number between 0 and 1
+    random_roll = np.random.random()
+
+    # If the roll is less than the probability, emit an extra electron
+    if random_roll < additional_prob:
+        total_electrons = base_electrons + 1
+    else:
+        total_electrons = base_electrons
+
+    return total_electrons
+
+
+
 def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
     # Initialize variables that were previously global
     first_bounce = True
@@ -40,8 +60,10 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
             #poisson_mean = sey_coefficient_guest(impact_energy, angle )
             
             #poisson_mean = int(np.round(poisson_mean))
-            poisson_mean = np.random.poisson(poisson_mean, 1)
-            poisson_mean = poisson_mean[0]
+            #poisson_mean = np.random.poisson(poisson_mean, 1)
+            poisson_mean = generate_electron_yield(poisson_mean)
+
+            #poisson_mean = poisson_mean[0]
             electrons_yield = poisson_mean
             self.yield_term = poisson_mean
 
@@ -95,7 +117,7 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position  
-        d = 0.05*2*46
+        d = r*2*71.831
         #d = r*2*46
         E = v * (c ** 2) / (d * m) 
         field_orientation = np.array([0., 0., 1])
@@ -184,7 +206,7 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
     total_electron_count = 0
     end_position_count = 0
     r= r
-    end_position_threshold = 0.05*2*46 #38.3
+    end_position_threshold = r*2*71.83 #38.3
     T = 2.5  # eV, assumed temperature
     
     start_positions = []
@@ -228,8 +250,8 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
     # Plotting impact_energy vs. bounces
     electron_yield_values_list = []
     for i in energies:
-        #poisson_mean = sey_coefficient(i, 0)
-        poisson_mean = sey_coefficient_guest(i,0)
+        poisson_mean = sey_coefficient(i, 0)
+        #poisson_mean = sey_coefficient_guest(i,0)
         #poisson_mean = int(np.round(poisson_mean))
         
         poisson_mean = np.random.poisson(poisson_mean, 1)
@@ -379,24 +401,28 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
 
 gain_spread_mean_list = []
 
-#range_of_r = np.linspace(0.025, 0.35, num=30)
-range_of_r =  [0.08]
+#range_of_r = np.linspace(0.0005, 0.002, num=10)
+#range_of_r =  [0.001665,0.00333,0.004,0.001,0.005]
+range_of_r = [0.0085]
+
 #range_of_v = [1200,1000,800,600]
-range_of_v = [700]
-angles = [9] #list(range(2, 40, 5))
+range_of_v = [1000]
+angles = [10] #list(range(2, 40, 5))
 number_of_runs = 1
 
 for v in range_of_v:
     for r in range_of_r:
         
-        starting_energy =  20
+        starting_energy =  200
         starting_angle = angles[0]
         gain_spread = []
         for j in range(number_of_runs):
             count_above_threshold= run_simulation(r,v,starting_energy,starting_angle,single_run=True)
             gain_spread.append(count_above_threshold)
-            #gain_spread.append(count_above_threshold)
+            
         plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
+        plt.xlabel('Gain (Number of Electrons leaving one pore)')
+        plt.ylabel('counts')
         gain_spread_mean = np.mean(gain_spread)
         gain_spread_mean_list.append((v, r, gain_spread_mean))
     
@@ -410,7 +436,7 @@ if single_run == False:
     for v in range_of_v:
         r_values = np.array( [r for v_val, r, gain in gain_spread_mean_list if v_val == v])
         gain_values = [gain for v_val, r, gain in gain_spread_mean_list if v_val == v]
-        plt.scatter((0.05*2*46)/(r_values*2), gain_values, label=f'v = {v:.2f}')
+        plt.scatter((0.00165*2*71.83)/(r_values*2), gain_values, label=f'v = {v:.2f}')
 
     plt.ylabel('Number of Electrons leaving the pore')
     plt.xlabel('L/D')
