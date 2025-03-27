@@ -13,7 +13,7 @@ from scipy.stats import cosine
 from scipy.linalg import norm
 from consin_dis import cosine_dis, calculate_theta_cylinder
 import functions_for_saving as ffs
-from energy_dis import accept_reject_v
+from energy_dis import accept_reject_v, inverse_cdf_output
 
 
 
@@ -139,13 +139,13 @@ if __name__ == '__main__':
     total_yield =[]
     
     E0 = 150  # eV, assumed value
-    T = 10.5  # eV, assumed temperature
-    accept_reject_energy = accept_reject_v(100000, E0, T,1)
-    one_run = True # set to true if you want to run one simulation
+    T = 1  # eV, assumed temperature
+    accept_reject_energy = accept_reject_v(1000, E0, T,1)
+    one_run = False # set to true if you want to run one simulation
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(1):
+    for _ in range(1000):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
         V = 700.   # electrods potential in V
@@ -191,22 +191,22 @@ if __name__ == '__main__':
         # initial step
         t = solve_for_intercept_time(x0, v0, a0, r)
         x1 = step_position(x0, v0, a0, t)
-        step_velocity = step_velocity(v0, a0, t)
-        print(f"v1 = {step_velocity}")
-        impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity, x1, r)
+        step_velocity_1 = step_velocity(v0, a0, t)
+        print(f"v1 = {step_velocity_1}")
+        impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity_1, x1, r)
 
         print(f"Time to hit boundary: {t}")
         print(f"Position at boundary: {x1}")
-        print(f"Velocity at boundary: {step_velocity}")
+        print(f"Velocity at boundary: {step_velocity_1}")
         print(f"Impact angle: {impact_angle} radians ({impact_angle_d} degrees)")
-        plt.figure()
-        plt.plot(x1[0], x1[1], 'ro')  # impact position
-        plt.plot(x0[0], x0[1], 'bo')  # starting position
-        plt.xlabel('x-position (mm)')
-        plt.ylabel('y-position (mm)')
-        plt.title('Electron Trajectory')
-        plt.grid(True)
-        plt.show()
+        # plt.figure()
+        # plt.plot(x1[0], x1[1], 'ro')  # impact position
+        # plt.plot(x0[0], x0[1], 'bo')  # starting position
+        # plt.xlabel('x-position (mm)')
+        # plt.ylabel('y-position (mm)')
+        # plt.title('Electron Trajectory')
+        # plt.grid(True)
+        # plt.show()
 
         energy1 = step_energy(v0, a0, t, m)
         print(f"Energy at boundary at fist hit: {energy1}")
@@ -253,8 +253,8 @@ if __name__ == '__main__':
                     print(f"shit this is small")
                     
 
-                for j in range(1000):
-                    xj = step_position(x1, v1, a0, (ti/1000)*j)
+                for j in range(100):
+                    xj = step_position(x1, v1, a0, (ti/100)*j)
                     current_electron.position_x.append(xj[0])
                     current_electron.position_y.append(xj[2])
                     current_electron.position_z.append(xj[1])
@@ -266,7 +266,7 @@ if __name__ == '__main__':
                         #n_of_collisions.append(i + 1)
                         x_end.append(xj[0])
                         y_end.append(xj[1])
-                        t_end.append((ti/1000)*j+total)
+                        t_end.append((ti/100)*j+total)
                         print(f"out of pore in time {t_end} in time range {total}")
 
 
@@ -277,7 +277,8 @@ if __name__ == '__main__':
                 electrons_yield = electron_yield(energy2)
 
                 for _ in range(electrons_yield):
-                    e_p = random.choice(accept_reject_energy)
+                    e_p = inverse_cdf_output(1000, energy2, T, delta=1)
+                    e_p = random.choice(e_p)
                     vel_a, theta = cosine_dis(xi, r)
                     v_en = np.sqrt((e_p / m) * 2 * (c ** 2))
                     new_velocity = np.array([vel_a[0][0] * v_en, vel_a[0][1] * v_en, vel_a[0][2] * v_en])
@@ -429,7 +430,7 @@ if __name__ == '__main__':
     print(f"n... {flattened_n_of_collisions}")
     plt.figure()
     bins_for_collisions = [i + 0.5 for i in range(min(flattened_n_of_collisions) - 1, max(flattened_n_of_collisions) + 1)]
-    plt.hist(flattened_n_of_collisions, bins=bins_for_collisions, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
+    plt.hist(flattened_n_of_collisions, bins=200, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
     flattened_n_of_collisions = np.array(flattened_n_of_collisions)
     
     ffs.append_data_with_header('outputs/Hits_data.txt', f"l/D = {(d / (2 * r)):.2f}", flattened_n_of_collisions)

@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import math
+import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.constants
@@ -58,18 +60,39 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
         
             poisson_mean = sey_coefficient(impact_energy, angle)
             #poisson_mean = sey_coefficient_guest(impact_energy, angle )
-            
-            #poisson_mean = int(np.round(poisson_mean))
-            #poisson_mean = np.random.poisson(poisson_mean, 1)
-            poisson_mean = generate_electron_yield(poisson_mean)
+            E_yield = generate_electron_yield(poisson_mean)
 
+            #poisson_mean = np.random.poisson(poisson_mean, 1)
             #poisson_mean = poisson_mean[0]
-            electrons_yield = poisson_mean
-            self.yield_term = poisson_mean
+            
+            #M = 10
+            # n = np.arange(0, M + 1)
+            # p = poisson_mean / M
+
+            # # Calculate binomial probabilities
+            # M_n = scipy.special.comb(M, n)
+            # Pts_i = M_n * (p ** n) * ((1 - p) ** (M - n))
+
+            # # Normalize probabilities to ensure they sum to 1
+            # Pts_i /= np.sum(Pts_i)
+            
+            # # Generate a random sample based on the distribution
+            # E_yield = np.random.choice(n, p=Pts_i)
+
+            # p = poisson_mean / M
+    
+            # Generate random samples from the binomial distribution
+            #E_yield = np.random.binomial(M, p, size=1)
+            #E_yield = E_yield[0]
+    
+
+            electrons_yield = E_yield
+            self.yield_term = E_yield
 
             total_assigned_energy = 0
             available_energy = self.impact_energy  # Track remaining energy
-            delta = poisson_mean  
+            delta = E_yield
+            
             
             
 
@@ -117,7 +140,7 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
 
         c = scipy.constants.speed_of_light * 1e-6
         x0 = electron.position  # Initial position  
-        d = r*2*71.831
+        d = r*2*62.2105
         #d = r*2*46
         E = v * (c ** 2) / (d * m) 
         field_orientation = np.array([0., 0., 1])
@@ -207,7 +230,7 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
     end_position_count = 0
     r= r
     end_position_threshold = r*2*71.83 #38.3
-    T = 2.5  # eV, assumed temperature
+    T = 2.2  # eV, assumed temperature
     
     start_positions = []
     end_positions = []
@@ -403,28 +426,34 @@ gain_spread_mean_list = []
 
 #range_of_r = np.linspace(0.0005, 0.002, num=10)
 #range_of_r =  [0.001665,0.00333,0.004,0.001,0.005]
-range_of_r = [0.0085]
-
+range_of_r = [0.003765]
+#range_of_r = [0.565]
 #range_of_v = [1200,1000,800,600]
-range_of_v = [1000]
-angles = [10] #list(range(2, 40, 5))
-number_of_runs = 1
+range_of_v = [910]
+angles = [12] #list(range(2, 40, 5))
+number_of_runs = 500
 
 for v in range_of_v:
     for r in range_of_r:
         
-        starting_energy =  200
+        starting_energy = 463    #188.06,13
         starting_angle = angles[0]
         gain_spread = []
         for j in range(number_of_runs):
-            count_above_threshold= run_simulation(r,v,starting_energy,starting_angle,single_run=True)
+            count_above_threshold= run_simulation(r,v,starting_energy,starting_angle,single_run=False)
             gain_spread.append(count_above_threshold)
-            
-        plt.hist(gain_spread, bins=50, alpha=0.75, label='Electron Energy',log=True)
+
+        gain_spread_mean = np.mean(gain_spread)   
+        gain_spread_mean_list.append((v, r, gain_spread_mean))
+        gain_spread_df = pd.DataFrame(gain_spread, columns=["gain"])
+        gain_spread_df.to_csv(f"gain_spread_{v}_{r}.csv", index=False)
+
+        plt.hist(gain_spread, bins=25, alpha=0.75, label=f" samples = {number_of_runs} mean = {gain_spread_mean}",log=True)
         plt.xlabel('Gain (Number of Electrons leaving one pore)')
         plt.ylabel('counts')
-        gain_spread_mean = np.mean(gain_spread)
-        gain_spread_mean_list.append((v, r, gain_spread_mean))
+        plt.legend()
+        
+        
     
 print(f"gain spread mean {gain_spread_mean}")
 

@@ -66,7 +66,7 @@ def accept_reject_v(N,E0,T,delta):
             x_list.append(t)
     return x_list
 
-def sey_coefficient(E, theta, E_th=1.35, Emax=500, delta_max=4, k_delta=1, k_E=1, alpha=0.25):
+def sey_coefficient(E, theta, E_th=0, Emax=500, delta_max=4, s=0, alpha=0.25):
     """
     Computes the SEY coefficient using the Modified Vaughan's model.
     
@@ -87,14 +87,15 @@ def sey_coefficient(E, theta, E_th=1.35, Emax=500, delta_max=4, k_delta=1, k_E=1
     delta_max = 3.7  # Maximum SEY value
     k_delta = 1.0  # Roughness factor related to delta
     k_E = 1.0  # Roughness factor related to energy
+    K_delta and K_E are roughness factors related to delta and energy and are now s
     alpha = 0.25  # Material-dependent fit parameter
     
     Returns:
     float: The SEY coefficient δ(E, θ).
     """
-    Emax_theta = Emax * (1 + k_E * theta**2 / (2 * np.pi))
+    Emax_theta = Emax * (1 + s * theta**2 / (2 * np.pi))
     
-    delta_max_theta = delta_max * (1 + k_delta * theta**2 / (2 * np.pi))
+    delta_max_theta = delta_max * (1 + s * theta**2 / (2 * np.pi))
     
   
     v_E = (E - E_th) / (Emax_theta - E_th)
@@ -176,11 +177,11 @@ if plot == True:
     d = 0.2  # Height of the cylinder
     end_position = [0.0025,     0.,         0.01779044]
     end_velocity =[0.86147291, 0.,          6.13108814]
-    yield_curve = [sey_coefficient(E_i, theta=0, E_th=10, Emax=370, delta_max=3.5, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
+    yield_curve = [sey_coefficient(E_i, theta=0, E_th=10, Emax=500, delta_max=4, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
     
     theta_rad , theta = calculate_theta_cylinder(end_velocity, end_position, r)
     print(theta)
-    yield_curve_rad = [sey_coefficient(E_i, theta=np.deg2rad(32), E_th=10, Emax=370, delta_max=3.5, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
+    yield_curve_rad = [sey_coefficient(E_i, theta=np.deg2rad(32), E_th=10, Emax=500, delta_max=4, k_delta=1, k_E=1, alpha=0.25) for E_i in E]
     plt.figure()
     plt.plot(E, yield_curve, 'b-', lw=2, label = f"theta = {0}")
     plt.plot(E, yield_curve_rad, 'r-', lw=2, label = f"theta = {32}")

@@ -44,7 +44,9 @@ z_end = []
 angle = []
 
 #energy_values = np.linspace(0.1, 2, num=200)
-distance_values = np.linspace(0, d, num=200)
+#distance_values = np.linspace(0, d, num=200)
+distance_values = np.arange(0, d + 0.005, 0.005)
+distance_values = distance_values+0.005/2
 #energy_values = [0.1, 0.5, 1, 1.5, 2]
 count_results = {}
 for V in voltage_values:
@@ -53,13 +55,13 @@ for V in voltage_values:
     a0 = E*orientation
 
     for d0 in distance_values:
-        
+        number_of_runs = 10000
         count = 0
-        for i in range (0, 1000):
+        for i in range (0, number_of_runs):
             hit = np.sqrt(r**2 - (0.003**2))
             x1 = np.array([hit, 0.003, d0])
             vel_a, theta = cosine_dis(x1, r)
-            emmited_energy = 2
+            emmited_energy = 1
             v = np.sqrt(2*emmited_energy/m)*c
             v1 = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
             
@@ -75,7 +77,7 @@ for V in voltage_values:
 
             if x2[2] >= d:
                 count+=1
-        count_for_e.append(count/1000)
+        count_for_e.append(count/number_of_runs)
     count_results[V] = count_for_e
 
 print(f"Number of particles that exited the pore: {count_for_e}")
