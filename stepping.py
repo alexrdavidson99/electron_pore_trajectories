@@ -13,7 +13,7 @@ from scipy.stats import cosine
 from scipy.linalg import norm
 from consin_dis import cosine_dis, calculate_theta_cylinder
 import functions_for_saving as ffs
-from energy_dis import accept_reject_v, inverse_cdf_output
+from energy_dis_and_SEY import accept_reject_v, inverse_cdf_output
 
 
 

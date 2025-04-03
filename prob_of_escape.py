@@ -58,24 +58,21 @@ for V in voltage_values:
         number_of_runs = 10000
         count = 0
         for i in range (0, number_of_runs):
-            hit = np.sqrt(r**2 - (0.003**2))
-            x1 = np.array([hit, 0.003, d0])
-            vel_a, theta = cosine_dis(x1, r)
-            emmited_energy = 1
+            
+            hit_pos = np.array([r, 0, d0])
+            vel_a, theta = cosine_dis(hit_pos, r)
+            emmited_energy = 1 # emmited energy of the ion 
             v = np.sqrt(2*emmited_energy/m)*c
             v1 = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
-            
-            
-            angle.append(np.arccos((v1[0]/np.sqrt(v1[0]**2+v1[1]**2))*(-x1[0])/r + (v1[1]/np.sqrt(v1[0]**2+v1[1]**2))*(-x1[1])/r))
-            t = solve_for_intercept_time(x1, v1, a0, r)
-        
+            angle.append(np.arccos((v1[0]/np.sqrt(v1[0]**2+v1[1]**2))*(-hit_pos[0])/r + (v1[1]/np.sqrt(v1[0]**2+v1[1]**2))*(-hit_pos[1])/r))
 
-            x2 = step_position(x1, v1, a0, t)
-            x_end.append(x2[0])
-            y_end.append(x2[1])
-            z_end.append(x2[2])
+            t = solve_for_intercept_time(hit_pos, v1, a0, r)
+            end_pos = step_position(hit_pos, v1, a0, t)
+            x_end.append(end_pos[0])
+            y_end.append(end_pos[1])
+            z_end.append(end_pos[2])
 
-            if x2[2] >= d:
+            if end_pos[2] >= d:
                 count+=1
         count_for_e.append(count/number_of_runs)
     count_results[V] = count_for_e
@@ -102,7 +99,7 @@ for V in voltage_values:
 
 # Create a DataFrame from the dictionary
 df = pd.DataFrame(data)
-df.to_csv(f'prob_results_{emmited_energy}ev.csv', index=False)
+#df.to_csv(f'prob_results_{emmited_energy}ev.csv', index=False)
 print(df)
 plt.figure()
 plt.hist(angle, bins=100, alpha=0.75, label=f'angle', density=True,color='r')

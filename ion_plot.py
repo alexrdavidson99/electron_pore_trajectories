@@ -114,27 +114,27 @@ def from_csv_energy_value_cal(pore_length, sample_start_position):
     #cal_random_value = pore_length - random_value*1e-3
     cal_random_value = random_value*1e-3
     print(f"random {random_value}")
-    return 700*cal_random_value/pore_length
+    return 750*cal_random_value/pore_length
 
 # Parameters
 target_distance = 1550e-6  # Target distance in meters
 pore_length = 460e-6  # Pore length in meters   
 Q_t = 1.76e11  # Mass of electron in kg
 intital_energy_ion = 0
-initial_energies = np.linspace(intital_energy_ion, 700, 500)
+#initial_energies = np.linspace(intital_energy_ion, 700, 500)
 
 sample_start_position = pd.read_csv("sampled_start_positions_ar.csv", header=None, names=["start_position"], skiprows=1)
 sampled_energy = [0] + [from_csv_energy_value_cal(pore_length,sample_start_position) for _ in range(500)]
 print(f"sampled energy {sampled_energy}")
 
 #initial_energies = [0,1,10,100,700]  # in eV
-#initial_energies = sampled_energy
+initial_energies = sampled_energy
 Q_m = 9.58e7
 ion_mass = 938.272e6  # Mass of proton in eV/c^2
 #ions = [Q_m,Q_m/4,Q_m/8,Q_m/16,Q_m/32,Q_m/64]
 #ion_mass_in_ev = [ion_mass,ion_mass*4,ion_mass*8,ion_mass*16,ion_mass*32,ion_mass*64]
-ions = [Q_m/16]
-ion_mass_in_ev = [ion_mass*16]
+ions = [Q_m/18]
+ion_mass_in_ev = [ion_mass*18]
 norm_ion_mass = [mass / 938.272e6 for mass in ion_mass_in_ev]
 voltages = [700]  # in V
 times_by_energy_voltage = {energy: {voltage: [] for voltage in voltages} for energy in initial_energies}
@@ -150,13 +150,13 @@ for mass, charge_mass_ratio in zip(ion_mass_in_ev, ions):
                 # where 0 is the angle of the electric field in the pore and 8 is reffering 
                 # to the angle of field in the mcp gap relative to the pore
 
-                x, y, t = electron_trajectory(pore_length/(700/initial_energy), charge_mass_ratio, mass, intital_energy_ion,
+                x, y, t = electron_trajectory(pore_length/(750/initial_energy), charge_mass_ratio, mass, intital_energy_ion,
                                             0, initial_energy)
                 
                 x_rotated, y_rotated = rotate_coordinates(x, y, 8)
                 # Convert to mm
                 x_rotated = np.array(x_rotated-x_rotated[-1]) * 1e3
-                y_rotated = np.array(y_rotated-pore_length/(700/initial_energy)) * 1e3
+                y_rotated = np.array(y_rotated-pore_length/(750/initial_energy)) * 1e3
 
                 plt.plot(x_rotated, y_rotated, label=f'{mass / 1e6:.1f} MeV/c^2, t_o_f in pore: {t[-1] / 1e-9:.4f},'
                                                     f' int_en: {initial_energy} ev')
@@ -223,7 +223,7 @@ plt.title(f'Histogram of Time for Ion Mass 1u at  0-1000ev (10ev) steps')
 print(f"times {times_for_one_ion_array}")
 plt.show()
 
-np.savetxt("./data_from_ion_pot/times_by_energy_voltage_uni.csv", times_for_one_ion_array, delimiter=",")
+np.savetxt("./data_from_ion_pot/times_by_energy_voltage_ar.csv", times_for_one_ion_array, delimiter=",")
 
 
 

@@ -7,8 +7,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.constants
 from scipy.linalg import norm
 
-from energy_dis import accept_reject_v, sey_coefficient, inverse_cdf_output, universal_yield_curve,sey_coefficient_guest
-from stepping import electron_yield, solve_for_intercept_time, step_position, step_energy, step_velocity
+from energy_dis_and_SEY import accept_reject_v, sey_coefficient, inverse_cdf_output, universal_yield_curve,sey_coefficient_guest
+from stepping import solve_for_intercept_time, step_position, step_energy, step_velocity
 from consin_dis import cosine_dis, calculate_theta_cylinder
 
 from dataclasses import dataclass, field
@@ -431,7 +431,7 @@ range_of_r = [0.003765]
 #range_of_v = [1200,1000,800,600]
 range_of_v = [910]
 angles = [12] #list(range(2, 40, 5))
-number_of_runs = 500
+number_of_runs = 5
 
 for v in range_of_v:
     for r in range_of_r:

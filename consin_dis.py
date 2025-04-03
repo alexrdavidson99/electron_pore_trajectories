@@ -10,8 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 def cosine_dis(xi,r):
     """
     Sample random points from a cosine distribution.

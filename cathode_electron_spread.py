@@ -79,55 +79,60 @@ def solve_for_intercept_time(x0, v0, acc, target_distance):
 
 angle = []
 
+depth_list = [0.55,1.55,2] # depth in mm
+volt_list = [100,200,700] #volts
+for d in depth_list:
+    for v in volt_list:
+        hit_position_x = []
+        hit_position_y = []
+        hit_time = []
+        for i in range(2000):
+            c = scipy.constants.speed_of_light*1e-6 # in mm/ns
+            V = v   # electrods potential in V
+            d = d  # pore depth in mm
 
-d_list = [100,200,700]
-for j in range(len(d_list)):
-    hit_position_x = []
-    hit_position_y = []
-    hit_time = []
-    for i in range(200):
-        c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = d_list[j]   # electrods potential in V
-        d = 1.55  # pore depth in mm
+            m = 511e3    # in eV
 
-        m = 511e3    # in eV
+            E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
+            e = 1 # in eV
+            v = np.sqrt(2*e/m)*c  # velocity in mm/ns
 
-        E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 1 # in eV
-        v = np.sqrt(2*e/m)*c  # velocity in mm/ns
+            orientation = np.array([0, 1,0])
+            x0 = np.array([0, 0, 0])
+            v0 = v*orientation
+            print(v0)
+            a0 = E*orientation
 
-        orientation = np.array([0, 1,0])
-        x0 = np.array([0, 0, 0])
-        v0 = v*orientation
-        print(v0)
-        a0 = E*orientation
+            vel_a, theta = cosine_dis()
+            new_velocity = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
+            # Calculate the energy of the new velocity
+            new_energy = 0.5 * m * np.linalg.norm(new_velocity) ** 2 / (c ** 2)
+            print(f"Initial energy: {e} eV")
+            print(f"New energy: {new_energy} eV")
+            print(f"Initial velocity: {v} mm/ns")
+            print(f"New velocity: {(new_velocity)} mm/ns")
 
-        vel_a, theta = cosine_dis()
-        new_velocity = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
-        # Calculate the energy of the new velocity
-        new_energy = 0.5 * m * np.linalg.norm(new_velocity) ** 2 / (c ** 2)
-        print(f"Initial energy: {e} eV")
-        print(f"New energy: {new_energy} eV")
-        print(f"Initial velocity: {v} mm/ns")
-        print(f"New velocity: {(new_velocity)} mm/ns")
+            print(new_velocity)
+            
 
-        print(new_velocity)
+            ti = solve_for_intercept_time(x0, new_velocity, a0, d)
+            print(f"step energy {step_energy(new_velocity, a0, ti, m)}")
+            print(f" time to hit {ti}")  
+            xi = step_position(x0, new_velocity, a0, ti)
+            hit_position_x.append(xi[0])
+            hit_position_y.append(xi[2])
+            hit_time.append(ti)
+
+        #plt.scatter(hit_position_x, hit_position_y, alpha=0.5, label=f"d = {d}")
+        bin_edges = np.arange(min(hit_position_x), max(hit_position_x) + 0.05, 0.05)
+        plt.hist(hit_position_x, bins=bin_edges, density=True, alpha=0.6, label=f"d = {d}")
+        plt.title("Impact position")
+        plt.xlabel("position (mm)")
+        plt.ylabel("counts_norm")
+
+        #plt.hist(hit_time, bins=30, density=True, alpha=0.6, label=f"V = {v} ")
         
-
-        ti = solve_for_intercept_time(x0, new_velocity, a0, d)
-        print(f"step energy {step_energy(new_velocity, a0, ti, m)}")
-        print(f" time to hit {ti}")  
-        xi = step_position(x0, new_velocity, a0, ti)
-        hit_position_x.append(xi[0])
-        hit_position_y.append(xi[2])
-        hit_time.append(ti)
-    #plt.scatter(hit_position_x, hit_position_y, alpha=0.5, label=f"d = {d_list[j]}")
-    bin_edges = np.arange(min(hit_position_x), max(hit_position_x) + 0.05, 0.05)
-    #plt.hist(hit_position_x, bins=bin_edges, density=True, alpha=0.6, label=f"d = {d_list[j]}")
-    plt.hist(hit_time, bins=30, density=True, alpha=0.6, label=f"V = {d_list[j]} ")
-    #plt.title("Impact position")
-    #plt.xlabel("position (mm)")
-    plt.xlabel("time (ns)")
-    plt.ylabel("counts")
+        #plt.xlabel("time (ns)")
+        #plt.ylabel("counts")
 plt.legend()
 plt.show()

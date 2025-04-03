@@ -106,11 +106,11 @@ sampled_positions_df.to_csv("sampled_start_positions_ar.csv", index=False)
 
 
 plt.figure()
-plt.scatter(end_position["z"], end_position_norm, alpha=0.5)
+#plt.scatter(end_position["z"], end_position_norm, alpha=0.5)
 fit_y = model_func(fit_x, *popt) / np.max(model_func(fit_x, *popt))
-plt.plot(fit_x, fit_y, 'r-', label='fit: a=%5.3f, b=%5.3f' % tuple(popt))
+#plt.plot(fit_x, fit_y, 'r-', label='fit: a=%5.3f, b=%5.3f' % tuple(popt))
 plt.plot(fit_x, normalized_model, label='Normalized Theoretical Distribution', color='r', linewidth=2)
-plt.hist(data_from_accept_reject, bins=int(N/25), alpha=0.75,density=True, label='Accept Reject histogram')
+plt.hist(data_from_accept_reject, bins=int(N/50), alpha=0.75,density=True, label='Accept Reject histogram')
 
 #plt.yscale('log')
 plt.title("Impact position_z_1000_runs")
@@ -157,7 +157,7 @@ probability_distribution = matched_count_results_1ev / np.sum(matched_count_resu
 cdf = np.cumsum(probability_distribution)
 
 
-sampled_positions = [sample_start_position(cdf, end_position["z"][::-1]) for _ in range(10000)]
+sampled_positions = [sample_start_position(cdf, end_position["z"][::-1]) for _ in range(100000)]
 #sampled_positions = [pos for pos in sampled_positions if -0.4575 <= pos <= -0.0328]
 # Plot the sampled start positions
 plt.figure()
