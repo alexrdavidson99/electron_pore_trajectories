@@ -13,7 +13,7 @@ from scipy.linalg import norm
 c = scipy.constants.speed_of_light*1e-6 # in mm/ns
 V = 1000   # electrods potential in V
 voltage_values = [500, 700, 1000]
-d = 46e-2   # pore depth in mm
+d = 700   # pore depth in mm
 l_over_d = 46
 r = (d/l_over_d)*0.5 
 
@@ -44,9 +44,9 @@ z_end = []
 angle = []
 
 #energy_values = np.linspace(0.1, 2, num=200)
-#distance_values = np.linspace(0, d, num=200)
-distance_values = np.arange(0, d + 0.005, 0.005)
-distance_values = distance_values+0.005/2
+distance_values = np.linspace(0, d, num=200)
+#distance_values = np.arange(0, d + 0.005, 0.005)
+#distance_values = distance_values+0.005/2
 #energy_values = [0.1, 0.5, 1, 1.5, 2]
 count_results = {}
 for V in voltage_values:
@@ -55,13 +55,13 @@ for V in voltage_values:
     a0 = E*orientation
 
     for d0 in distance_values:
-        number_of_runs = 10000
+        number_of_runs = 100000
         count = 0
         for i in range (0, number_of_runs):
             
             hit_pos = np.array([r, 0, d0])
             vel_a, theta = cosine_dis(hit_pos, r)
-            emmited_energy = 1 # emmited energy of the ion 
+            emmited_energy = 2 # emmited energy of the ion 
             v = np.sqrt(2*emmited_energy/m)*c
             v1 = np.array([vel_a[0][0] * v, vel_a[0][1] * v, vel_a[0][2] * v])
             angle.append(np.arccos((v1[0]/np.sqrt(v1[0]**2+v1[1]**2))*(-hit_pos[0])/r + (v1[1]/np.sqrt(v1[0]**2+v1[1]**2))*(-hit_pos[1])/r))
@@ -99,13 +99,13 @@ for V in voltage_values:
 
 # Create a DataFrame from the dictionary
 df = pd.DataFrame(data)
-#df.to_csv(f'prob_results_{emmited_energy}ev.csv', index=False)
+df.to_csv(f'prob_results_{emmited_energy}ev-torch-100k-2ev.csv', index=False)
 print(df)
-plt.figure()
-plt.hist(angle, bins=100, alpha=0.75, label=f'angle', density=True,color='r')
-plt.title(f'angle of emmited electrons')
-plt.xlabel('angle')
-plt.ylabel('normalized count')
+# plt.figure()
+# plt.hist(angle, bins=100, alpha=0.75, label=f'angle', density=True,color='r')
+# plt.title(f'angle of emmited electrons')
+# plt.xlabel('angle')
+# plt.ylabel('normalized count')
 
 
 plt.show()

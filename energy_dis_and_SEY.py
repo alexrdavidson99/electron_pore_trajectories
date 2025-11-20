@@ -66,7 +66,7 @@ def accept_reject_v(N,E0,T,delta):
             x_list.append(t)
     return x_list
 
-def sey_coefficient(E, theta, E_th=0, Emax=500, delta_max=4, s=0, alpha=0.25):
+def sey_coefficient(E, theta, E_th=0, Emax=500, delta_max=3, s=1, alpha=0.25):
     """
     Computes the SEY coefficient using the Modified Vaughan's model.
     
@@ -109,6 +109,9 @@ def sey_coefficient(E, theta, E_th=0, Emax=500, delta_max=4, s=0, alpha=0.25):
         delta = delta_max_theta * 1.125 * v_E**-0.35
     
     return delta
+
+
+
 
 def sey_coefficient_guest(E, theta, Emax=500, delta_max=4, alpha=0.6, beta=0.65):
     C = np.cos(theta)*np.sqrt(E/ Emax)

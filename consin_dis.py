@@ -58,48 +58,42 @@ def cosine_dis(xi,r):
     return vel_a, theta
 
 
-def calculate_theta_cylinder(velocity, impact_position, r):
+
+import numpy as np
+
+def calculate_theta_cylinder(velocity, xi, r):
     
-    """
-    Calculate the angle θ between the velocity vector of the electron
-    and the z-y plane at the moment of impact.
-    
-    Parameters:
-    velocity : ndarray
-        The velocity vector of the electron at the moment of impact.
-    impact_position : ndarray
-        The position of the electron at the moment of impact.
-    
-    Returns:
-    theta : float
-        The angle of impact in radians with respect to the z-y plane.
-    theta_degrees : float
-        The angle of impact in degrees with respect to the z-y plane.
-    """
-    # Define the radial vector in the z-y plane
-    radial_vector = np.array([0, impact_position[1], impact_position[2]])
-    
-    # Normalize the radial vector
-    radial_magnitude = np.linalg.norm(radial_vector)
-    radial_normalized = radial_vector / radial_magnitude
+    x = xi[0]
+    y = xi[1]
+    z = xi[2]
+    # Define the normal vector to the x-z plane (along the y-axis)
+    normal_vector = np.array( [x / r, y / r, 0])
     
     # Normalize the velocity vector
     velocity_magnitude = np.linalg.norm(velocity)
+     
     velocity_normalized = velocity / velocity_magnitude
     
-    # Compute the dot product between the velocity and the radial vector
-    dot_product = np.dot(velocity_normalized, radial_normalized)
+    # Normalize the normal vector (although it's already a unit vector, just for completeness)
+    normal_magnitude = np.linalg.norm(normal_vector)
     
-    # Clip the dot product to avoid out-of-range errors in arccos
-    #dot_product = np.clip(dot_product, -1.0, 1.0)
+    normal_normalized = normal_vector / normal_magnitude
     
-    # Calculate the angle with respect to the z-y plane
+    # Compute the dot product between the velocity vector and the normal vector
+    dot_product = np.dot(velocity_normalized, normal_normalized)
+    
+    # Ensure the dot product stays within the valid range [-1, 1] for arccos
+    dot_product = np.clip(dot_product, -1.0, 1.0)
+    
+    # Calculate the angle in radians
     theta = np.arccos(dot_product)
     
-    # Convert to degrees
+    # Convert the angle to degrees
     theta_degrees = np.degrees(theta)
     
     return theta, theta_degrees
+   
+
 
 
 plot = False
