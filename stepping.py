@@ -86,6 +86,86 @@ def solve_for_intercept_time( x0, v0, acc, radius ):
 
     return numpy.real( numpy.min( _roots ) )
 
+import numpy as np
+
+def runge_kutta_intercept(x0, v0, acc, radius, dt=1e-4, max_time=1):
+    """
+    Solves for intercept time using 4th-order Runge-Kutta method in 3D.
+
+    Parameters:
+        x0 (numpy array): Initial position [x0, y0, z0]
+        v0 (numpy array): Initial velocity [vx, vy, vz]
+        acc (numpy array): Acceleration [ax, ay, az]
+        radius (float): Cylinder radius (collision boundary)
+        dt (float): Time step for RK4 integration
+        max_time (float): Maximum simulation time
+
+    Returns:
+        float or None: First positive intercept time, or None if no intercept is found.
+    """
+
+    # Initial conditions
+    t = 0
+    x, y, z = x0
+    vx, vy, vz = v0
+    ax, ay, az = acc
+
+    # Define derivative functions
+    def dx_dt(vx): return vx
+    def dy_dt(vy): return vy
+    def dz_dt(vz): return vz
+    def dvx_dt(ax): return ax
+    def dvy_dt(ay): return ay
+    def dvz_dt(az): return az
+
+    # Time stepping with RK4
+    while t < max_time:
+        # Compute RK4 coefficients
+        k1_x = dt * dx_dt(vx)
+        k1_y = dt * dy_dt(vy)
+        k1_z = dt * dz_dt(vz)
+        k1_vx = dt * dvx_dt(ax)
+        k1_vy = dt * dvy_dt(ay)
+        k1_vz = dt * dvz_dt(az)
+
+        k2_x = dt * dx_dt(vx + 0.5 * k1_vx)
+        k2_y = dt * dy_dt(vy + 0.5 * k1_vy)
+        k2_z = dt * dz_dt(vz + 0.5 * k1_vz)
+        k2_vx = dt * dvx_dt(ax)
+        k2_vy = dt * dvy_dt(ay)
+        k2_vz = dt * dvz_dt(az)
+
+        k3_x = dt * dx_dt(vx + 0.5 * k2_vx)
+        k3_y = dt * dy_dt(vy + 0.5 * k2_vy)
+        k3_z = dt * dz_dt(vz + 0.5 * k2_vz)
+        k3_vx = dt * dvx_dt(ax)
+        k3_vy = dt * dvy_dt(ay)
+        k3_vz = dt * dvz_dt(az)
+
+        k4_x = dt * dx_dt(vx + k3_vx)
+        k4_y = dt * dy_dt(vy + k3_vy)
+        k4_z = dt * dz_dt(vz + k3_vz)
+        k4_vx = dt * dvx_dt(ax)
+        k4_vy = dt * dvy_dt(ay)
+        k4_vz = dt * dvz_dt(az)
+
+        # Update state using RK4 formula
+        x += (k1_x + 2 * k2_x + 2 * k3_x + k4_x) / 6
+        y += (k1_y + 2 * k2_y + 2 * k3_y + k4_y) / 6
+        z += (k1_z + 2 * k2_z + 2 * k3_z + k4_z) / 6
+        vx += (k1_vx + 2 * k2_vx + 2 * k3_vx + k4_vx) / 6
+        vy += (k1_vy + 2 * k2_vy + 2 * k3_vy + k4_vy) / 6
+        vz += (k1_vz + 2 * k2_vz + 2 * k3_vz + k4_vz) / 6
+
+        t += dt
+
+        # Check if the particle reaches the cylinder boundary
+        if x**2 + y**2 >= radius**2:
+            return t  # First intercept time
+
+    return None  # No intercept found within max_time
+
+
 
 def step_position( x0, v0, acc, time ):
     '''
@@ -135,6 +215,7 @@ if __name__ == '__main__':
     x_end = []
     y_end = []
     t_end = []
+    exit_energy = []
     energy_overall = []
     total_yield =[]
     
@@ -145,23 +226,22 @@ if __name__ == '__main__':
     e_field_in_z = True # set to true if you want the e-field to be in the z direction
     message_printed = False # used to print the message only once
 
-    for _ in range(1000):
+    for _ in range(150):
 
         c = scipy.constants.speed_of_light*1e-6 # in mm/ns
-        V = 700.   # electrods potential in V
-        #d = 2e-1  
-        d = 2 * 0.006 * 38.3  # pore depth in mm
-        l_over_d = 40
+        V = 860.   # electrods potential in V
+        #d = 2e-1   # pore depth in mm
+        l_over_d = 50
+        d = 2 * 0.00075 * l_over_d  # pore depth in mm
         r = (d/l_over_d)*0.5 
-        r = 0.006
+        #r = 0.006
       
-        #r = 1.666666e-3    # pore radius in mm
         #m = 938.272e6 
         m = 511e3    # in eV
         #m = 195303.27e6
         E = V*(c**2)/(d*m)  # electric field acceleration in mm/ns^2
-        e = 200  # in eV
-        v = numpy.sqrt(2*e/m)*c  # velocity in mm/ns
+        e = 20  # in eV
+        v = numpy.sqrt(2*e/m)*c  #  starting velocity in mm/ns
         
         print(1.6e-19 * 2 / 2 * r)
         print(f"l/D = {(d/(2*r)):.2f} length to diameter ratio")
@@ -190,10 +270,12 @@ if __name__ == '__main__':
         # Step particle in field until it reaches boundary or exits
         # initial step
         t = solve_for_intercept_time(x0, v0, a0, r)
+        #t = runge_kutta_intercept(x0, v0, a0, r)
+
         x1 = step_position(x0, v0, a0, t)
         step_velocity_1 = step_velocity(v0, a0, t)
         print(f"v1 = {step_velocity_1}")
-        impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity_1, x1, r)
+        impact_angle, impact_angle_d = calculate_theta_cylinder(step_velocity_1, x1,r)
 
         print(f"Time to hit boundary: {t}")
         print(f"Position at boundary: {x1}")
@@ -261,13 +343,20 @@ if __name__ == '__main__':
 
                     #out of pore condition
                     if xj[2] > d and not message_printed:
+                        #energy when leaving the pore 
+
                         print(f"out of pore in {i - 1} collisions")
                         message_printed = True
                         #n_of_collisions.append(i + 1)
                         x_end.append(xj[0])
                         y_end.append(xj[1])
+                        energy_end = step_energy(v1, a0, (ti/100)*j, m)
+                        print(f"exit emgergy {energy_end}")
+                        exit_energy.append(energy_end)
                         t_end.append((ti/100)*j+total)
-                        print(f"out of pore in time {t_end} in time range {total}")
+                        #print(f"out of pore in time {t_end} in time range {total}")
+                        break
+
 
 
                 print(xi, xi[0] ** 2 + xi[1] ** 2)
@@ -425,9 +514,10 @@ if __name__ == '__main__':
         energy_overall.append(energy)
         #total_yield.append(s_yield)
 
+    
 
     flattened_n_of_collisions = [item for sublist in all_n_of_collisions for item in sublist]
-    print(f"n... {flattened_n_of_collisions}")
+    
     plt.figure()
     bins_for_collisions = [i + 0.5 for i in range(min(flattened_n_of_collisions) - 1, max(flattened_n_of_collisions) + 1)]
     plt.hist(flattened_n_of_collisions, bins=200, alpha=0.7, edgecolor='black', align='mid', rwidth=1.0) #, rwidth=0.85)
@@ -459,19 +549,36 @@ if __name__ == '__main__':
     plt.xlabel("x position (mm)")
     plt.ylabel("y position (mm)")
 
-    # new plot 
+    # new plot exit time distribution
     plt.figure()
-    plt.hist(t_end, bins=10, alpha=0.7, rwidth=0.85, density=True, color='purple', edgecolor='black')
+    plt.hist(t_end, bins=10, color='purple', edgecolor='black') #alpha=0.7, rwidth=0.85
     plt.title("Histogram of exit times")
+    plt.xlabel("time")
+    plt.ylabel("events")
+    
+
+    plt.figure()
+    # bin size 1ev
+    exit_energy = np.array(exit_energy)
+    min_energy = int(np.floor(exit_energy.min()))
+    max_energy = int(np.ceil(exit_energy.max()))
+
+    bins = np.arange(min_energy, max_energy + 1, 1)
+    plt.hist(exit_energy, bins=bins, color='purple', edgecolor='black')
+     #alpha=0.7, rwidth=0.85
+    plt.title("Histogram of exit energy")
+    plt.yscale('log')
+    plt.xlabel("enrgy eV")
+    plt.ylabel("events")
+    
+
     # shows the energy distribution
-
-
     plt.figure()
     flattened_energy_overall = [item for sublist in energy_overall for item in sublist]
     flattened_yield_overall = [item for sublist in total_yield for item in sublist]
     
     plt.hist(flattened_energy_overall, alpha=0.7, rwidth=0.85,
-             edgecolor='black', range=(0, 500), bins=50 , density=True)
+             edgecolor='black', bins=50 , density=True,range=(0, 900))
     flattened_energy_overall= np.array(flattened_energy_overall)
     ffs.append_data_with_header('outputs/energy_data.txt', f"l/D = {(d / (2 * r)):.2f}", flattened_energy_overall)
 

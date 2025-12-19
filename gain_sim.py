@@ -401,7 +401,7 @@ def run_simulation(r, v, starting_energy, starting_angle, single_run=True):
         plt.figure(figsize=(12, 6))
         plt.hist(energies, bins=100, alpha=0.75, range=(0,1000), label='Electron Energy')
         plt.hist(energies_out, bins=100, alpha=0.75,range=(0,1000), label='Electron Energy out of pore')
-        print(f"energies {np.max(energies)}")
+        #print(f"energies {np.max(energies)}")
         
         try:
             print(f"energies_out {np.max(energies_out)}")
@@ -421,14 +421,15 @@ initial_time_list = []
 l_over_d_list = []
 range_of_r = np.linspace(0.0005, 0.01, num=50)
 #range_of_r =  [0.001665,0.00333,0.004,0.001,0.005]
-range_of_r = [0.003765]
+range_of_r = [0.007525]
+
 #range_of_r = [0.005]
 #range_of_v = [1200,1000,800,600]
-range_of_v = [1200]
+range_of_v = [800]
 #range_of_l = np.linspace(0.0015*2*40, 0.02*2*40, num=50)
-range_of_l = [0.4]
+range_of_l = [0.700]
 angles = [8] #list(range(2, 40, 5))
-number_of_runs = 92
+number_of_runs = 3500
 colors = []
 gain_list_dis = []
 if __name__ == "__main__":
@@ -437,7 +438,7 @@ if __name__ == "__main__":
             for t in range_of_l:
                 #l = r*2*40 
                 l=t
-                starting_energy = 500   #188.06,13
+                starting_energy = 700   #188.06,13
                 starting_angle = angles[0]
                 gain_spread = []
                 l_over_d_list.append(l/(r*2))
@@ -466,11 +467,12 @@ if __name__ == "__main__":
                 else:
                     colors.append('blue')
             
-
+    save_gain_variation = pd.DataFrame(gain_list_dis, columns=["gain"])
+    save_gain_variation.to_csv(f"gain_spread_list_torch_3500_700ev_higher_gain.csv", index=False)
         
-    print(f"gain spread mean {gain_spread_mean}")
-    print(f"initial hit energy list {initial_hit_energy_list}")
-    print(f"initial time list {initial_time_list}")
+    #print(f"gain spread mean {gain_spread_mean}")
+    #print(f"initial hit energy list {initial_hit_energy_list}")
+    #print(f"initial time list {initial_time_list}")
     np_initial_list = np.array(initial_time_list)
 
 
